@@ -172,6 +172,14 @@ public class Board {
         }
     }
     
+    public boolean isSolved() {
+        for (Entry<Character, Position> target: targets.entrySet()) {
+            if (!abbots.get(target.getKey()).equals(target.getValue()))
+                return false;
+        }
+        return true;
+    }
+    
     private boolean[] abbotsAtRow(int y) {
         boolean[] line = new boolean[width]; // false initially
         for (Position pos: abbots.values()) {
@@ -196,10 +204,14 @@ public class Board {
             b.parse(new BufferedReader(new InputStreamReader(System.in)));
         else
             b.parse(new BufferedReader(new FileReader(args[0])));
-        //System.out.println(b.toString());
-        b.move('r', Direction.Left);
-        b.move('r', Direction.Up);
-        b.move('r', Direction.Right);
         System.out.println(b.toString());
+        System.out.println("Solved: " + b.isSolved());
+        b.move('r', Direction.Left);
+        b.move('r', Direction.Right);
+        b.move('r', Direction.Up);
+        //b.move('r', Direction.Up);
+        //b.move('r', Direction.Right);
+        System.out.println(b.toString());
+        System.out.println("Solved: " + b.isSolved());
     }
 }

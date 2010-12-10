@@ -126,7 +126,7 @@ public class Board {
         return sb.toString();
     }
     
-    public void move(char abbot, Direction direction) {
+    public boolean move(char abbot, Direction direction) {
         Position pos = abbots.get(abbot);
         boolean[] otherAbbots = null;
         boolean[] walls = null;
@@ -159,17 +159,22 @@ public class Board {
                 i++;
             break;
         }
-        // update position
+        // update position and detect if the abbot was actually moved
         switch (direction) {
         case Up:
         case Down:
+            if (pos.y == i)
+                return false;
             pos.y = i;
             break;
         case Left:
         case Right:
+            if (pos.x == i)
+                return false;
             pos.x = i;
             break;
         }
+        return true;
     }
     
     public boolean isSolved() {

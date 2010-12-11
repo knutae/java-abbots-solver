@@ -48,19 +48,43 @@ class SearchEntry {
     
     public int hashCode() {
         int a = abbot;
-        return x ^ (y << 8) ^ (a << 16); 
+        return x ^ (y << 8) ^ (a << 16);
+    }
+}
+
+class SearchKey {
+    Set<SearchEntry> keySet;
+    private int cachedHashCode;
+    
+    public SearchKey(Map<Character, Position> abbots) {
+        this.keySet = new HashSet<SearchEntry>();
+        for (Entry<Character, Position> entry: abbots.entrySet())
+            keySet.add(new SearchEntry(entry));
+        cachedHashCode = keySet.hashCode();
+    }
+    
+    public int hashCode() {
+        return cachedHashCode;
+    }
+    
+    public boolean equals(SearchKey other) {
+        return cachedHashCode == other.cachedHashCode && keySet.equals(other.keySet);
+    }
+    
+    public boolean equals(Object other) {
+        if (other instanceof SearchKey)
+            return equals((SearchKey) other);
+        return false;
     }
 }
 
 class SearchNode {
-    Set<SearchEntry> keySet;
+    SearchKey key;
     List<Move> moves;
     
-    public SearchNode(Map<Character, Position> abbots, List<Move> moves) {
-       keySet = new HashSet<SearchEntry>();
-       for (Entry<Character, Position> entry: abbots.entrySet())
-           keySet.add(new SearchEntry(entry));
-       this.moves = moves;
+    public SearchNode(SearchKey key, List<Move> moves) {
+        this.key = key;
+        this.moves = moves;
     }
     
     public String movesToString(String sep) {
@@ -95,12 +119,12 @@ public class Solver {
     private Board board;
     private Move[] moves;
     private SearchNode root;
-    private HashMap<Set<SearchEntry>, SearchNode> searchMap;
+    private HashMap<SearchKey, SearchNode> searchMap;
     
     public Solver(Board board) {
         this.board = board;
-        searchMap = new HashMap<Set<SearchEntry>, SearchNode>();
-        root = new SearchNode(board.getAbbots(), new ArrayList<Move>(0));
+        searchMap = new HashMap<SearchKey, SearchNode>();
+        root = new SearchNode(new SearchKey(board.getAbbots()), new ArrayList<Move>(0));
         moves = new Move[board.getAbbots().size() * Direction.values().length];
         int i = 0;
         for (char abbot: board.getAbbots().keySet()) {
@@ -112,7 +136,7 @@ public class Solver {
     
     private void resetBoardAbbots(SearchNode node) {
         Map<Character, Position> abbotMap = board.getAbbots();
-        for (SearchEntry entry: node.keySet) {
+        for (SearchEntry entry: node.key.keySet) {
             Position pos = abbotMap.get(entry.abbot);
             pos.x = entry.x;
             pos.y = entry.y;
@@ -136,13 +160,14 @@ public class Solver {
                         continue;
                     }
                     needsReset = true;
+                    SearchKey newKey = new SearchKey(board.getAbbots());
+                    if (searchMap.containsKey(newKey))
+                        continue;
                     ArrayList<Move> newMoves = new ArrayList<Move>(node.moves.size()+1);
                     newMoves.addAll(node.moves);
                     newMoves.add(move);
-                    SearchNode subNode = new SearchNode(board.getAbbots(), newMoves);
-                    if (searchMap.containsKey(subNode.keySet))
-                        continue;
-                    searchMap.put(subNode.keySet, subNode);
+                    SearchNode subNode = new SearchNode(newKey, newMoves);
+                    searchMap.put(newKey, subNode);
                     
                     // found a new node, process it
                     if (board.isSolved())

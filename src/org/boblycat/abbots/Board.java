@@ -36,6 +36,7 @@ public class Board {
             throw new RuntimeException("Too few lines");
         height = (lines.size() - 1) / 2;
         width = lines.get(0).replaceAll("[+]", "").length();
+        Position.init(width, height);
         
         // process all vertical walls
         verticalWalls = new boolean[height][width+1];
@@ -78,9 +79,9 @@ public class Board {
             for (int x = 0; x < width; x++) {
                 char c = line.charAt(x*2 + 1);
                 if (Character.isLowerCase(c))
-                    abbots.put(c, new Position(x, y));
+                    abbots.put(c, Position.get(x, y));
                 else if (Character.isUpperCase(c))
-                    targets.put(Character.toLowerCase(c), new Position(x, y));
+                    targets.put(Character.toLowerCase(c), Position.get(x, y));
                 else if (c != ' ')
                     throw new RuntimeException("Expected letter or space, got '" + c + "'");
             }
@@ -166,13 +167,13 @@ public class Board {
         case Down:
             if (pos.y == i)
                 return false;
-            pos.y = i;
+            abbots.put(abbot, Position.get(pos.x, i));
             break;
         case Left:
         case Right:
             if (pos.x == i)
                 return false;
-            pos.x = i;
+            abbots.put(abbot, Position.get(i, pos.y));
             break;
         }
         return true;

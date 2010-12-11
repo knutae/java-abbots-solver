@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.SortedMap;
+import java.util.Map.Entry;
 
 import org.boblycat.abbots.Board.Direction;
 
@@ -31,7 +32,7 @@ class SearchKey {
         int i = 0;
         for (Position pos: abbots.values()) {
             cachedHashCode += pos.hashCode();
-            abbotPos[i] = new Position(pos.x, pos.y);
+            abbotPos[i] = pos;
             i++;
         }
     }
@@ -41,10 +42,8 @@ class SearchKey {
     }
     
     public boolean equals(SearchKey other) {
-        if (cachedHashCode != other.cachedHashCode)
-            return false;
         for (int i = 0; i < abbotPos.length; i++) {
-            if (!abbotPos[i].equals(other.abbotPos[i]))
+            if (abbotPos[i] != other.abbotPos[i])
                 return false;
         }
         return true;
@@ -124,10 +123,9 @@ public class Solver {
     
     private void resetBoardAbbots(SearchNode node) {
         int i = 0;
-        for (Position boardPos: board.getAbbots().values()) {
+        for (Entry<Character, Position> entry: board.getAbbots().entrySet()) {
             Position pos = node.key.abbotPos[i];
-            boardPos.x = pos.x;
-            boardPos.y = pos.y;
+            entry.setValue(pos);
             i++;
         }
     }

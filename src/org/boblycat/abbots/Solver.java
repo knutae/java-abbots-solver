@@ -139,7 +139,7 @@ public class Solver {
         }
     }
     
-    String solve(String movesSep) {
+    public String solve(String movesSep) {
         List<SearchNode> currentNodes = new ArrayList<SearchNode>();
         currentNodes.add(root);
         int i = 0;

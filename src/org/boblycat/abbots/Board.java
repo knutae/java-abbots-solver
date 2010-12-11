@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.SortedMap;
@@ -86,6 +87,10 @@ public class Board {
                     throw new RuntimeException("Expected letter or space, got '" + c + "'");
             }
         }
+    }
+    
+    public void parse(String str) throws IOException {
+        parse(new BufferedReader(new StringReader(str)));
     }
     
     public String toString() {

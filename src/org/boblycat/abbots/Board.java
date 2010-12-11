@@ -194,6 +194,16 @@ public class Board {
         return targets;
     }
     
+    public int abbotIndex(char abbot) {
+        int i = 0;
+        for (char c: abbots.keySet()) {
+            if (c == abbot)
+                return i;
+            i++;
+        }
+        throw new RuntimeException("Abbot not found: " + abbot);
+    }
+    
     private boolean[] abbotsAtRow(int y) {
         boolean[] line = new boolean[width]; // false initially
         for (Position pos: abbots.values()) {

@@ -18,4 +18,8 @@ public class Position {
             return equals((Position) other);
         return false;
     }
+
+    public int hashCode() {
+        return x ^ (y << 16);
+    }
 }

@@ -7,8 +7,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.SortedMap;
 
 import org.boblycat.abbots.Board.Direction;
 
@@ -22,46 +21,17 @@ class Move {
     }
 }
 
-class SearchEntry {
-    char abbot;
-    int x;
-    int y;
-    
-    public SearchEntry(Entry<Character, Position> mapEntry) {
-        abbot = mapEntry.getKey();
-        Position pos = mapEntry.getValue();
-        x = pos.x;
-        y = pos.y;
-    }
-    
-    public boolean equals(SearchEntry other) {
-        return abbot == other.abbot && x == other.x && y == other.y;
-    }
-    
-    public boolean equals(Object other) {
-        if (other instanceof SearchEntry)
-            return equals((SearchEntry) other);
-        return false;
-    }
-    
-    public int hashCode() {
-        int a = abbot;
-        return x ^ (y << 8) ^ (a << 16);
-    }
-}
-
 class SearchKey {
-    SearchEntry[] keySet;
+    Position[] abbotPos;
     private int cachedHashCode;
     
-    public SearchKey(Map<Character, Position> abbots) {
-        keySet = new SearchEntry[abbots.size()];
+    public SearchKey(SortedMap<Character, Position> abbots) {
+        abbotPos = new Position[abbots.size()];
         cachedHashCode = 0;
         int i = 0;
-        for (Entry<Character, Position> entry: abbots.entrySet()) {
-            SearchEntry se = new SearchEntry(entry);
-            cachedHashCode += se.hashCode();
-            keySet[i] = se;
+        for (Position pos: abbots.values()) {
+            cachedHashCode += pos.hashCode();
+            abbotPos[i] = new Position(pos.x, pos.y);
             i++;
         }
     }
@@ -73,8 +43,8 @@ class SearchKey {
     public boolean equals(SearchKey other) {
         if (cachedHashCode != other.cachedHashCode)
             return false;
-        for (int i = 0; i < keySet.length; i++) {
-            if (!keySet[i].equals(other.keySet[i]))
+        for (int i = 0; i < abbotPos.length; i++) {
+            if (!abbotPos[i].equals(other.abbotPos[i]))
                 return false;
         }
         return true;
@@ -129,7 +99,8 @@ public class Solver {
     private Move[] moves;
     private SearchNode root;
     private HashMap<SearchKey, SearchNode> searchMap;
-    private SearchEntry targetEntry;
+    private Position targetPosition;
+    private int targetIndex;
     
     public Solver(Board board) {
         this.board = board;
@@ -143,18 +114,21 @@ public class Solver {
         }
         assert (i == moves.length);
         
-        Map<Character, Position> targets = board.getTargets();
+        SortedMap<Character, Position> targets = board.getTargets();
         if (targets.size() != 1)
             throw new RuntimeException("Need exactly one target");
-        targetEntry = new SearchEntry(targets.entrySet().iterator().next());
+        targetPosition = targets.values().iterator().next();
+        // index of targetEntry will be the same for all nodes, since they are sorted by abbot
+        targetIndex = board.abbotIndex(targets.keySet().iterator().next());
     }
     
     private void resetBoardAbbots(SearchNode node) {
-        Map<Character, Position> abbotMap = board.getAbbots();
-        for (SearchEntry entry: node.key.keySet) {
-            Position pos = abbotMap.get(entry.abbot);
-            pos.x = entry.x;
-            pos.y = entry.y;
+        int i = 0;
+        for (Position boardPos: board.getAbbots().values()) {
+            Position pos = node.key.abbotPos[i];
+            boardPos.x = pos.x;
+            boardPos.y = pos.y;
+            i++;
         }
     }
     
@@ -185,9 +159,8 @@ public class Solver {
                     searchMap.put(newKey, subNode);
                     
                     // found a new node, process it
-                    //if (subNode.key.keySet.contains(targetEntry)) {
-                    //    assert (board.isSolved());
-                    if (board.isSolved()) {
+                    if (subNode.key.abbotPos[targetIndex].equals(targetPosition)) {
+                        assert (board.isSolved());
                         return subNode.movesToString(movesSep);
                     }
                     nextNodes.add(subNode);

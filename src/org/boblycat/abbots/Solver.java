@@ -23,18 +23,19 @@ class Move {
 }
 
 class SearchKey {
-    Position[] abbotPos;
-    private int cachedHashCode;
+    final Position[] abbotPos;
+    final private int cachedHashCode;
     
     public SearchKey(SortedMap<Character, Position> abbots) {
         abbotPos = new Position[abbots.size()];
-        cachedHashCode = 0;
+        int hc = 0;
         int i = 0;
         for (Position pos: abbots.values()) {
-            cachedHashCode += pos.hashCode();
+            hc += pos.hashCode();
             abbotPos[i] = pos;
             i++;
         }
+        cachedHashCode = hc;
     }
     
     public int hashCode() {
@@ -58,11 +59,19 @@ class SearchKey {
 
 class SearchNode {
     SearchKey key;
-    List<Move> moves;
+    Move[] moves;
     
-    public SearchNode(SearchKey key, List<Move> moves) {
+    public SearchNode(SearchKey key, SearchNode parent, Move thisMove) {
         this.key = key;
-        this.moves = moves;
+        if (parent == null)
+            moves = new Move[0];
+        else {
+            Move[] prevMoves = parent.moves;
+            moves = new Move[prevMoves.length + 1];
+            for (int i = 0; i < prevMoves.length; i++)
+                moves[i] = prevMoves[i];
+            moves[prevMoves.length] = thisMove;
+        }
     }
     
     public String movesToString(String sep) {
@@ -104,7 +113,7 @@ public class Solver {
     public Solver(Board board) {
         this.board = board;
         searchMap = new HashMap<SearchKey, SearchNode>();
-        root = new SearchNode(new SearchKey(board.getAbbots()), new ArrayList<Move>(0));
+        root = new SearchNode(new SearchKey(board.getAbbots()), null, null);
         moves = new Move[board.getAbbots().size() * Direction.values().length];
         int i = 0;
         for (char abbot: board.getAbbots().keySet()) {
@@ -150,10 +159,7 @@ public class Solver {
                     SearchKey newKey = new SearchKey(board.getAbbots());
                     if (searchMap.containsKey(newKey))
                         continue;
-                    ArrayList<Move> newMoves = new ArrayList<Move>(node.moves.size()+1);
-                    newMoves.addAll(node.moves);
-                    newMoves.add(move);
-                    SearchNode subNode = new SearchNode(newKey, newMoves);
+                    SearchNode subNode = new SearchNode(newKey, node, move);
                     searchMap.put(newKey, subNode);
                     
                     // found a new node, process it

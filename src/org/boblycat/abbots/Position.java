@@ -1,6 +1,6 @@
 package org.boblycat.abbots;
 
-public class Position {
+public final class Position {
     public final int x;
     public final int y;
     

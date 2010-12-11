@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import org.boblycat.abbots.Board.Direction;
@@ -53,14 +51,19 @@ class SearchEntry {
 }
 
 class SearchKey {
-    Set<SearchEntry> keySet;
+    SearchEntry[] keySet;
     private int cachedHashCode;
     
     public SearchKey(Map<Character, Position> abbots) {
-        this.keySet = new HashSet<SearchEntry>();
-        for (Entry<Character, Position> entry: abbots.entrySet())
-            keySet.add(new SearchEntry(entry));
-        cachedHashCode = keySet.hashCode();
+        keySet = new SearchEntry[abbots.size()];
+        cachedHashCode = 0;
+        int i = 0;
+        for (Entry<Character, Position> entry: abbots.entrySet()) {
+            SearchEntry se = new SearchEntry(entry);
+            cachedHashCode += se.hashCode();
+            keySet[i] = se;
+            i++;
+        }
     }
     
     public int hashCode() {
@@ -68,7 +71,13 @@ class SearchKey {
     }
     
     public boolean equals(SearchKey other) {
-        return cachedHashCode == other.cachedHashCode && keySet.equals(other.keySet);
+        if (cachedHashCode != other.cachedHashCode)
+            return false;
+        for (int i = 0; i < keySet.length; i++) {
+            if (!keySet[i].equals(other.keySet[i]))
+                return false;
+        }
+        return true;
     }
     
     public boolean equals(Object other) {
@@ -176,8 +185,9 @@ public class Solver {
                     searchMap.put(newKey, subNode);
                     
                     // found a new node, process it
-                    if (subNode.key.keySet.contains(targetEntry)) {
-                        assert (board.isSolved());
+                    //if (subNode.key.keySet.contains(targetEntry)) {
+                    //    assert (board.isSolved());
+                    if (board.isSolved()) {
                         return subNode.movesToString(movesSep);
                     }
                     nextNodes.add(subNode);

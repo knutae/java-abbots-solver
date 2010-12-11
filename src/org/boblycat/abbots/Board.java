@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 
 public class Board {
@@ -21,8 +21,8 @@ public class Board {
     private int width, height;
     private boolean[][] horizontalWalls;
     private boolean[][] verticalWalls;
-    private HashMap<Character, Position> abbots;
-    private HashMap<Character, Position> targets;
+    private SortedMap<Character, Position> abbots;
+    private SortedMap<Character, Position> targets;
     
     public void parse(BufferedReader input) throws IOException {
         ArrayList<String> lines = new ArrayList<String>();
@@ -70,8 +70,8 @@ public class Board {
         }
         
         // process abbots and targets
-        abbots = new HashMap<Character, Position>();
-        targets = new HashMap<Character, Position>();
+        abbots = new TreeMap<Character, Position>();
+        targets = new TreeMap<Character, Position>();
         for (int y = 0; y < height; y++) {
             line = lines.get(y*2 + 1);
             //System.out.println(line);
@@ -186,11 +186,11 @@ public class Board {
         return true;
     }
     
-    public Map<Character, Position> getAbbots() {
+    public SortedMap<Character, Position> getAbbots() {
         return abbots;
     }
     
-    public Map<Character, Position> getTargets() {
+    public SortedMap<Character, Position> getTargets() {
         return targets;
     }
     

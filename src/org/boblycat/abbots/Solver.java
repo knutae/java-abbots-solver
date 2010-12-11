@@ -120,6 +120,7 @@ public class Solver {
     private Move[] moves;
     private SearchNode root;
     private HashMap<SearchKey, SearchNode> searchMap;
+    private SearchEntry targetEntry;
     
     public Solver(Board board) {
         this.board = board;
@@ -132,6 +133,11 @@ public class Solver {
                 moves[i++] = new Move(abbot, dir);
         }
         assert (i == moves.length);
+        
+        Map<Character, Position> targets = board.getTargets();
+        if (targets.size() != 1)
+            throw new RuntimeException("Need exactly one target");
+        targetEntry = new SearchEntry(targets.entrySet().iterator().next());
     }
     
     private void resetBoardAbbots(SearchNode node) {
@@ -170,8 +176,10 @@ public class Solver {
                     searchMap.put(newKey, subNode);
                     
                     // found a new node, process it
-                    if (board.isSolved())
+                    if (subNode.key.keySet.contains(targetEntry)) {
+                        assert (board.isSolved());
                         return subNode.movesToString(movesSep);
+                    }
                     nextNodes.add(subNode);
                 }
             }

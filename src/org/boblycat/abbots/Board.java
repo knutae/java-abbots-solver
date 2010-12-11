@@ -190,6 +190,10 @@ public class Board {
         return abbots;
     }
     
+    public Map<Character, Position> getTargets() {
+        return targets;
+    }
+    
     private boolean[] abbotsAtRow(int y) {
         boolean[] line = new boolean[width]; // false initially
         for (Position pos: abbots.values()) {

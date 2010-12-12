@@ -97,14 +97,16 @@ public class Client {
         return resp.get(0);
     }
     
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        int cpus = Runtime.getRuntime().availableProcessors();
+        System.out.println("Using " + cpus + " threads");
         Socket sock = new Socket("munkeliv.ath.cx", 50000);
         Client client = new Client(sock);
-        client.sendAndReceive("iama", "Oracle-powered Evil Daemon");
+        client.sendAndReceive("iama", "Oracle-powered Evil Daemon [" + cpus + " threads]");
         Board board = client.start();
         System.out.println("Got board:\n" + board);
         Solver solver = new Solver(board, true);
-        String solution = solver.solve("");
+        String solution = solver.solveMultiThreaded(cpus, "");
         //System.out.println("Solution: " + solution);
         String servertime = client.solve(solution);
         System.out.println("Server time: " + servertime + " ms");

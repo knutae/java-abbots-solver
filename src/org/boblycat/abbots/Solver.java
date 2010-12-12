@@ -6,12 +6,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
@@ -169,6 +167,7 @@ class SolverThread extends Thread {
     
     public void run() {
         try {
+            HashMap<SearchKey, SearchNode> localMap = new HashMap<SearchKey, SearchNode>();
             for (SearchNode node: currentNodes) {
                 if (isInterrupted())
                     return;
@@ -183,10 +182,11 @@ class SolverThread extends Thread {
                     }
                     needsReset = true;
                     SearchKey newKey = new SearchKey(board.getAbbots(), targetIndex);
-                    if (searchMap.containsKey(newKey))
+                    if (searchMap.containsKey(newKey) || localMap.containsKey(newKey))
                         continue;
                     SearchNode subNode = new SearchNode(newKey, node, move);
-                    searchMap.put(newKey, subNode);
+                    //searchMap.put(newKey, subNode); // would require synchronization
+                    localMap.put(newKey, subNode);
                     
                     // found a new node, process it
                     if (subNode.key.abbotPos[targetIndex].equals(targetPosition)) {
@@ -212,6 +212,8 @@ public class Solver {
     private Position targetPosition;
     private int targetIndex;
     private boolean verbose;
+    private long timer;
+    private static final boolean PRINT_TIMING = false;
     
     public Solver(Board board, boolean verbose) {
         this.board = board;
@@ -283,13 +285,29 @@ public class Solver {
         }
     }
     
+    private void startTimer() {
+        if (PRINT_TIMING)
+            timer = System.nanoTime();
+    }
+    
+    private void printTimer(String label) {
+        if (PRINT_TIMING) {
+            long diff = (System.nanoTime() - timer);
+            System.out.println(String.format(Locale.US, "%s: %.0f ms", label, 0.000001*diff));
+            timer = System.nanoTime();
+        }
+    }
+    
     public String solveMultiThreaded(int numThreads, String movesSep) throws InterruptedException {
-        Map<SearchKey, SearchNode> syncMap = Collections.synchronizedMap(searchMap);
+        if (numThreads <= 1)
+            return solve(movesSep);
+        
         BlockingQueue<ThreadResult> resultQueue = new LinkedBlockingQueue<ThreadResult>();
         List<SearchNode> currentNodes = new ArrayList<SearchNode>();
         currentNodes.add(root);
         int depth = 1;
         while (true) {
+            startTimer();
             // partition currentNodes and start threads
             int chunksize = currentNodes.size() / numThreads;
             if (chunksize * numThreads < currentNodes.size())
@@ -302,22 +320,35 @@ public class Solver {
                 List<SearchNode> nodesChunk = currentNodes.subList(chunkIndex, endIndex);
                 SolverThread thread = new SolverThread(
                         group, "Solver" + actualThreadNum,
-                        board, nodesChunk, syncMap, moves, targetPosition, targetIndex, resultQueue);
+                        board, nodesChunk, searchMap, moves, targetPosition, targetIndex, resultQueue);
                 thread.start();
                 actualThreadNum++;
             }
+            printTimer("Starting threads");
             // collect thread results
-            List<SearchNode> nextNodes = new ArrayList<SearchNode>();
+            List<SearchNode> tmpNodes = new ArrayList<SearchNode>();
             for (int i = 0; i < actualThreadNum; i++) {
                 ThreadResult result = resultQueue.take();
                 if (result.solutionNode != null) {
+                    printTimer("Waiting for solution");
                     if (verbose)
                         System.out.println("Found solution with depth " + depth);
                     group.interrupt(); // interrupt any remaining threads
                     return result.solutionNode.movesToString(movesSep);
                 }
-                nextNodes.addAll(result.nodes);
+                tmpNodes.addAll(result.nodes);
             }
+            printTimer("Waiting for threads");
+            List<SearchNode> nextNodes = new ArrayList<SearchNode>(tmpNodes.size());
+            // update search map (only from main thread to avoid locking)
+            for (SearchNode node: tmpNodes) {
+                SearchNode oldNode = searchMap.put(node.key, node);
+                if (oldNode == null) {
+                    // null test avoids nodes with duplicate keys in nextNodes
+                    nextNodes.add(node);
+                }
+            }
+            printTimer("Updating map");
             if (verbose)
                 System.out.println("Depth " + depth + ", map size " + searchMap.size());
             depth++;
@@ -335,10 +366,10 @@ public class Solver {
         long startTime = System.currentTimeMillis();
         Solver solver = new Solver(b, true);
         //String solution = solver.solve(" ");
-        //int cpus = Runtime.getRuntime().availableProcessors();
-        //System.out.println("Using " + cpus + " threads");
-        //String solution = solver.solveMultiThreaded(cpus, " ");
-        String solution = solver.solveMultiThreaded(2, " ");
+        int cpus = Runtime.getRuntime().availableProcessors();
+        System.out.println("Using " + cpus + " threads");
+        String solution = solver.solveMultiThreaded(cpus, " ");
+        //String solution = solver.solveMultiThreaded(4, " ");
         long endTime = System.currentTimeMillis();
         System.out.println("Solution: " + solution);
         //System.out.println(b.toString());

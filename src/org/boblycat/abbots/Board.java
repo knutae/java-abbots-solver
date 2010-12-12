@@ -22,8 +22,8 @@ public class Board {
     private int width, height;
     private boolean[][] horizontalWalls;
     private boolean[][] verticalWalls;
-    private SortedMap<Character, Position> abbots;
-    private SortedMap<Character, Position> targets;
+    private TreeMap<Character, Position> abbots;
+    private TreeMap<Character, Position> targets;
     
     public void parse(BufferedReader input) throws IOException {
         ArrayList<String> lines = new ArrayList<String>();
@@ -234,6 +234,19 @@ public class Board {
     
     public int getHeight() {
         return height;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public Board cloneBoard() {
+        Board copy = new Board();
+        copy.width = width;
+        copy.height = height;
+        copy.horizontalWalls = horizontalWalls;
+        copy.verticalWalls = verticalWalls;
+        copy.targets = targets;
+        // abbots is the only mutable member
+        copy.abbots = (TreeMap<Character, Position>) abbots.clone();
+        return copy;
     }
     
     public static void main(String[] args) throws IOException {

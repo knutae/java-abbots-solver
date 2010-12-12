@@ -6,10 +6,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.boblycat.abbots.Board.Direction;
 
@@ -120,6 +126,84 @@ class SearchNode {
     }
 }
 
+class ThreadResult {
+    List<SearchNode> nodes;
+    SearchNode solutionNode;
+    
+    ThreadResult(List<SearchNode> nodes, SearchNode solutionNode) {
+        this.nodes = nodes;
+        this.solutionNode = solutionNode;
+    }
+}
+
+class SolverThread extends Thread {
+    private Board board;
+    private List<SearchNode> currentNodes;
+    private Map<SearchKey, SearchNode> searchMap;
+    private Move[] moves;
+    private Position targetPosition;
+    private int targetIndex;
+    private BlockingQueue<ThreadResult> resultQueue;
+    private List<SearchNode> nextNodes;
+    
+    public SolverThread(
+            ThreadGroup threadGroup,
+            String threadName,
+            Board board,
+            List<SearchNode> currentNodes,
+            Map<SearchKey, SearchNode> searchMap,
+            Move[] moves,
+            Position targetPosition,
+            int targetIndex,
+            BlockingQueue<ThreadResult> resultQueue) {
+        super(threadGroup, threadName);
+        this.board = board.cloneBoard();
+        this.currentNodes = currentNodes;
+        this.searchMap = searchMap;
+        this.moves = moves;
+        this.targetPosition = targetPosition;
+        this.targetIndex = targetIndex;
+        this.resultQueue = resultQueue;
+        this.nextNodes = new ArrayList<SearchNode>();
+    }
+    
+    public void run() {
+        try {
+            for (SearchNode node: currentNodes) {
+                if (isInterrupted())
+                    return;
+                boolean needsReset = true;
+                for (Move move: moves) {
+                    if (needsReset)
+                        Solver.resetBoardAbbots(board, node);
+                    if (!board.move(move.abbot, move.dir)) {
+                        // not moved
+                        needsReset = false;
+                        continue;
+                    }
+                    needsReset = true;
+                    SearchKey newKey = new SearchKey(board.getAbbots(), targetIndex);
+                    if (searchMap.containsKey(newKey))
+                        continue;
+                    SearchNode subNode = new SearchNode(newKey, node, move);
+                    searchMap.put(newKey, subNode);
+                    
+                    // found a new node, process it
+                    if (subNode.key.abbotPos[targetIndex].equals(targetPosition)) {
+                        assert (board.isSolved());
+                        resultQueue.put(new ThreadResult(null, subNode));
+                        return;
+                    }
+                    nextNodes.add(subNode);
+                }
+            }
+            resultQueue.put(new ThreadResult(nextNodes, null));
+        } catch (InterruptedException e) {
+            // normal if solution was found on other thread
+        }
+    }
+}
+
 public class Solver {
     private Board board;
     private Move[] moves;
@@ -150,7 +234,7 @@ public class Solver {
         root = new SearchNode(new SearchKey(board.getAbbots(), targetIndex), null, null);
     }
     
-    private void resetBoardAbbots(SearchNode node) {
+    static void resetBoardAbbots(Board board, SearchNode node) {
         int i = 0;
         for (Entry<Character, Position> entry: board.getAbbots().entrySet()) {
             Position pos = node.key.abbotPos[i];
@@ -169,7 +253,7 @@ public class Solver {
                 boolean needsReset = true;
                 for (Move move: moves) {
                     if (needsReset)
-                        resetBoardAbbots(node);
+                        resetBoardAbbots(board, node);
                     if (!board.move(move.abbot, move.dir)) {
                         // not moved
                         needsReset = false;
@@ -199,7 +283,49 @@ public class Solver {
         }
     }
     
-    public static void main(String[] args) throws IOException {
+    public String solveMultiThreaded(int numThreads, String movesSep) throws InterruptedException {
+        Map<SearchKey, SearchNode> syncMap = Collections.synchronizedMap(searchMap);
+        BlockingQueue<ThreadResult> resultQueue = new LinkedBlockingQueue<ThreadResult>();
+        List<SearchNode> currentNodes = new ArrayList<SearchNode>();
+        currentNodes.add(root);
+        int depth = 1;
+        while (true) {
+            // partition currentNodes and start threads
+            int chunksize = currentNodes.size() / numThreads;
+            if (chunksize * numThreads < currentNodes.size())
+                chunksize++;
+            assert (chunksize * numThreads >= currentNodes.size());
+            ThreadGroup group = new ThreadGroup("SolverThreads");
+            int actualThreadNum = 0;
+            for (int chunkIndex = 0; chunkIndex < currentNodes.size(); chunkIndex += chunksize) {
+                int endIndex = Math.min(chunkIndex + chunksize, currentNodes.size());
+                List<SearchNode> nodesChunk = currentNodes.subList(chunkIndex, endIndex);
+                SolverThread thread = new SolverThread(
+                        group, "Solver" + actualThreadNum,
+                        board, nodesChunk, syncMap, moves, targetPosition, targetIndex, resultQueue);
+                thread.start();
+                actualThreadNum++;
+            }
+            // collect thread results
+            List<SearchNode> nextNodes = new ArrayList<SearchNode>();
+            for (int i = 0; i < actualThreadNum; i++) {
+                ThreadResult result = resultQueue.take();
+                if (result.solutionNode != null) {
+                    if (verbose)
+                        System.out.println("Found solution with depth " + depth);
+                    group.interrupt(); // interrupt any remaining threads
+                    return result.solutionNode.movesToString(movesSep);
+                }
+                nextNodes.addAll(result.nodes);
+            }
+            if (verbose)
+                System.out.println("Depth " + depth + ", map size " + searchMap.size());
+            depth++;
+            currentNodes = nextNodes;
+        }
+    }
+    
+    public static void main(String[] args) throws IOException, InterruptedException {
         Board b = new Board();
         if (args.length == 0)
             b.parse(new BufferedReader(new InputStreamReader(System.in)));
@@ -208,7 +334,11 @@ public class Solver {
         System.out.println(b.toString());
         long startTime = System.currentTimeMillis();
         Solver solver = new Solver(b, true);
-        String solution = solver.solve(" ");
+        //String solution = solver.solve(" ");
+        //int cpus = Runtime.getRuntime().availableProcessors();
+        //System.out.println("Using " + cpus + " threads");
+        //String solution = solver.solveMultiThreaded(cpus, " ");
+        String solution = solver.solveMultiThreaded(2, " ");
         long endTime = System.currentTimeMillis();
         System.out.println("Solution: " + solution);
         //System.out.println(b.toString());

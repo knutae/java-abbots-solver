@@ -228,6 +228,14 @@ public class Board {
         return line;
     }
     
+    public int getWidth() {
+        return width;
+    }
+    
+    public int getHeight() {
+        return height;
+    }
+    
     public static void main(String[] args) throws IOException {
         Board b = new Board();
         if (args.length == 0)

@@ -144,7 +144,7 @@ public class Solver {
     public String solve(String movesSep) {
         List<SearchNode> currentNodes = new ArrayList<SearchNode>();
         currentNodes.add(root);
-        int i = 0;
+        int depth = 1;
         while (true) {
             List<SearchNode> nextNodes = new ArrayList<SearchNode>();
             for (SearchNode node: currentNodes) {
@@ -167,14 +167,16 @@ public class Solver {
                     // found a new node, process it
                     if (subNode.key.abbotPos[targetIndex].equals(targetPosition)) {
                         assert (board.isSolved());
+                        if (verbose)
+                            System.out.println("Found solution with depth " + depth);
                         return subNode.movesToString(movesSep);
                     }
                     nextNodes.add(subNode);
                 }
             }
-            i++;
             if (verbose)
-                System.out.println("Depth " + i + ", map size " + searchMap.size());
+                System.out.println("Depth " + depth + ", map size " + searchMap.size());
+            depth++;
             currentNodes = nextNodes;
         }
     }
@@ -191,7 +193,7 @@ public class Solver {
         String solution = solver.solve(" ");
         long endTime = System.currentTimeMillis();
         System.out.println("Solution: " + solution);
-        System.out.println(b.toString());
+        //System.out.println(b.toString());
         System.out.println("Duration: " + (endTime - startTime) + " ms");
     }
 }

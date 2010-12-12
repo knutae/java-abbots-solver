@@ -107,7 +107,7 @@ public class TestSolver {
     public TestSolver(String boardData, int expectedDepth, String expectedSolution) throws IOException {
         board = new Board();
         board.parse(boardData);
-        solver = new Solver(board);
+        solver = new Solver(board, false);
         this.expectedDepth = expectedDepth;
         this.expectedSolution = expectedSolution;
     }

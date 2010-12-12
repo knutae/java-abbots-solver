@@ -103,7 +103,7 @@ public class Client {
         client.sendAndReceive("iama", "Oracle-powered Evil Daemon");
         Board board = client.start();
         System.out.println("Got board:\n" + board);
-        Solver solver = new Solver(board);
+        Solver solver = new Solver(board, true);
         String solution = solver.solve("");
         //System.out.println("Solution: " + solution);
         String servertime = client.solve(solution);

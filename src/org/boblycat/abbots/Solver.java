@@ -109,9 +109,11 @@ public class Solver {
     private HashMap<SearchKey, SearchNode> searchMap;
     private Position targetPosition;
     private int targetIndex;
+    private boolean verbose;
     
-    public Solver(Board board) {
+    public Solver(Board board, boolean verbose) {
         this.board = board;
+        this.verbose = verbose;
         searchMap = new HashMap<SearchKey, SearchNode>();
         root = new SearchNode(new SearchKey(board.getAbbots()), null, null);
         moves = new Move[board.getAbbots().size() * Direction.values().length];
@@ -171,7 +173,8 @@ public class Solver {
                 }
             }
             i++;
-            System.out.println("Depth " + i + ", map size " + searchMap.size());
+            if (verbose)
+                System.out.println("Depth " + i + ", map size " + searchMap.size());
             currentNodes = nextNodes;
         }
     }
@@ -184,7 +187,7 @@ public class Solver {
             b.parse(new BufferedReader(new FileReader(args[0])));
         System.out.println(b.toString());
         long startTime = System.currentTimeMillis();
-        Solver solver = new Solver(b);
+        Solver solver = new Solver(b, true);
         String solution = solver.solve(" ");
         long endTime = System.currentTimeMillis();
         System.out.println("Solution: " + solution);

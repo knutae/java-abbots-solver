@@ -1,6 +1,6 @@
 package org.boblycat.abbots;
 
-public final class Position {
+public final class Position implements Comparable<Position> {
     public final int x;
     public final int y;
     
@@ -20,5 +20,14 @@ public final class Position {
     private Position(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    @Override
+    public int compareTo(Position other) {
+        int diff = other.x - x;
+        if (diff == 0)
+            return other.y - y;
+        else
+            return diff;
     }
 }

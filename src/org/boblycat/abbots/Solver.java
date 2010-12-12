@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.SortedMap;
@@ -24,18 +25,33 @@ class Move {
 
 class SearchKey {
     final Position[] abbotPos;
+    final private Position[] sortedAbbotPos;
     final private int cachedHashCode;
+    final private int targetIndex;
     
-    public SearchKey(SortedMap<Character, Position> abbots) {
+    public SearchKey(SortedMap<Character, Position> abbots, int targetIndex) {
         abbotPos = new Position[abbots.size()];
         int hc = 0;
         int i = 0;
         for (Position pos: abbots.values()) {
-            hc += pos.hashCode() ^ i;
+            if (i == targetIndex)
+                hc += pos.hashCode() << 1;
+            else
+                hc += pos.hashCode();
             abbotPos[i] = pos;
             i++;
         }
         cachedHashCode = hc;
+        this.targetIndex = targetIndex;
+
+        sortedAbbotPos = new Position[abbotPos.length-1];
+        for (i = 0; i < abbotPos.length; i++) {
+            if (i < targetIndex)
+                sortedAbbotPos[i] = abbotPos[i];
+            else if (i > targetIndex)
+                sortedAbbotPos[i-1] = abbotPos[i];
+        }
+        Arrays.sort(sortedAbbotPos);
     }
     
     public int hashCode() {
@@ -43,8 +59,10 @@ class SearchKey {
     }
     
     public boolean equals(SearchKey other) {
-        for (int i = 0; i < abbotPos.length; i++) {
-            if (abbotPos[i] != other.abbotPos[i])
+        if (abbotPos[targetIndex] != other.abbotPos[targetIndex])
+            return false;
+        for (int i = 0; i < sortedAbbotPos.length; i++) {
+            if (sortedAbbotPos[i] != other.sortedAbbotPos[i])
                 return false;
         }
         return true;
@@ -115,7 +133,6 @@ public class Solver {
         this.board = board;
         this.verbose = verbose;
         searchMap = new HashMap<SearchKey, SearchNode>();
-        root = new SearchNode(new SearchKey(board.getAbbots()), null, null);
         moves = new Move[board.getAbbots().size() * Direction.values().length];
         int i = 0;
         for (char abbot: board.getAbbots().keySet()) {
@@ -130,6 +147,7 @@ public class Solver {
         targetPosition = targets.values().iterator().next();
         // index of targetEntry will be the same for all nodes, since they are sorted by abbot
         targetIndex = board.abbotIndex(targets.keySet().iterator().next());
+        root = new SearchNode(new SearchKey(board.getAbbots(), targetIndex), null, null);
     }
     
     private void resetBoardAbbots(SearchNode node) {
@@ -158,7 +176,7 @@ public class Solver {
                         continue;
                     }
                     needsReset = true;
-                    SearchKey newKey = new SearchKey(board.getAbbots());
+                    SearchKey newKey = new SearchKey(board.getAbbots(), targetIndex);
                     if (searchMap.containsKey(newKey))
                         continue;
                     SearchNode subNode = new SearchNode(newKey, node, move);

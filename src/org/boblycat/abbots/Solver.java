@@ -31,7 +31,7 @@ class SearchKey {
         int hc = 0;
         int i = 0;
         for (Position pos: abbots.values()) {
-            hc += pos.hashCode();
+            hc += pos.hashCode() ^ i;
             abbotPos[i] = pos;
             i++;
         }

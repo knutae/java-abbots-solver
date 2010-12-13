@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -81,24 +82,28 @@ class SearchKey {
 
 class SearchNode {
     SearchKey key;
-    Move[] moves;
+    Move move;
+    SearchNode parent;
     
     public SearchNode(SearchKey key, SearchNode parent, Move thisMove) {
         this.key = key;
-        if (parent == null)
-            moves = new Move[0];
-        else {
-            Move[] prevMoves = parent.moves;
-            moves = new Move[prevMoves.length + 1];
-            for (int i = 0; i < prevMoves.length; i++)
-                moves[i] = prevMoves[i];
-            moves[prevMoves.length] = thisMove;
-        }
+        this.parent = parent;
+        this.move = thisMove;
     }
     
     public String movesToString(String sep) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
+        
+        // Traverse parents to extract moves list
+        List<Move> moves = new ArrayList<Move>();
+        SearchNode node = this;
+        while (node != null && node.move != null) {
+            moves.add(node.move);
+            node = node.parent;
+        }
+        Collections.reverse(moves);
+        
         for (Move m: moves) {
             if (first)
                 first = false;

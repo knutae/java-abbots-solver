@@ -1,6 +1,9 @@
 package org.boblycat.abbots;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
@@ -10,29 +13,29 @@ import org.junit.Test;
 
 public class TestBoard {
     private Board board;
-    
-    private static String SMALL_BOARD =
-        "+-+-+-+\n" +
-        "|r    |\n" +
-        "+-+ +-+\n" +
-        "|R b  |\n" +
-        "+-+-+-+";
-    
+
+    private static String SMALL_BOARD = String.join("\n", //
+            "+-+-+-+", //
+            "|r    |", //
+            "+-+ +-+", //
+            "|R b  |", //
+            "+-+-+-+");
+
     @Before
     public void setUp() {
         board = new Board();
     }
-    
+
     private static void checkPosition(Position pos, int x, int y) {
         assertNotNull(pos);
         assertEquals(x, pos.x);
         assertEquals(y, pos.y);
     }
-    
+
     private void checkAbbotPosition(char abbot, int x, int y) {
         checkPosition(board.getAbbots().get(abbot), x, y);
     }
-    
+
     @Test
     public void parse() throws IOException {
         board.parse(SMALL_BOARD);
@@ -44,7 +47,7 @@ public class TestBoard {
         assertEquals(1, board.getTargets().size());
         checkPosition(board.getTargets().get('r'), 0, 1);
     }
-    
+
     @Test
     public void move() throws IOException {
         board.parse(SMALL_BOARD);
@@ -68,7 +71,7 @@ public class TestBoard {
         assertTrue(board.move('r', Direction.Left));
         checkAbbotPosition('r', 0, 1);
     }
-    
+
     @Test
     public void isSolved() throws IOException {
         board.parse(SMALL_BOARD);

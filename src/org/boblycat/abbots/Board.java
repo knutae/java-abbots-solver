@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -265,6 +266,13 @@ public class Board {
         copy.targets = targets;
         // abbots is the only mutable member
         copy.abbots = (TreeMap<Character, Position>) abbots.clone();
+        return copy;
+    }
+
+    public Board cloneWithAbbotsAndTargets(Map<Character, Position> abbots, Map<Character, Position> targets) {
+        Board copy = cloneBoard();
+        copy.abbots = new TreeMap<>(abbots);
+        copy.targets = new TreeMap<>(targets);
         return copy;
     }
 

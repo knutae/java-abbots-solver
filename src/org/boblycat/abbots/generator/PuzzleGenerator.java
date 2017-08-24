@@ -21,6 +21,9 @@ import org.boblycat.abbots.Board;
 import org.boblycat.abbots.Board.Direction;
 import org.boblycat.abbots.Position;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+
 class Move {
     char abbot;
     Board.Direction dir;
@@ -256,12 +259,22 @@ public class PuzzleGenerator {
         return board.cloneWithAbbotsAndTargets(originalAbbots, Collections.singletonMap(abbot, targetPosition));
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    private static class Args {
+        @Parameter(names = { "-f", "--filename" }, description = "Board filename")
+        String filename = "-";
+
+        @Parameter(names = { "-d", "--max-depth" }, description = "Max search depth")
+        int maxDepth = 20;
+    }
+
+    public static void main(String[] argv) throws IOException, InterruptedException {
+        Args args = new Args();
+        JCommander.newBuilder().addObject(args).build().parse(argv);
         Board b = new Board();
-        if (args.length == 0) {
+        if (args.filename.equals("-")) {
             b.parse(new BufferedReader(new InputStreamReader(System.in)));
         } else {
-            b.parse(new BufferedReader(new FileReader(args[0])));
+            b.parse(new BufferedReader(new FileReader(args.filename)));
         }
         System.out.println(b.toString());
         long startTime = System.currentTimeMillis();
@@ -271,7 +284,7 @@ public class PuzzleGenerator {
         //System.out.println("Using " + cpus + " threads");
         //String solution = solver.solveMultiThreaded(cpus, " ");
         //String solution = solver.solveMultiThreaded(4, " ");
-        Map<Character, Map<Position, PuzzleSolution>> results = generator.generate(20);
+        Map<Character, Map<Position, PuzzleSolution>> results = generator.generate(args.maxDepth);
         long endTime = System.currentTimeMillis();
         AtomicInteger counter = new AtomicInteger();
         results.forEach((abbot, r) -> {

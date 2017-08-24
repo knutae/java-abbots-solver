@@ -19,5 +19,8 @@ repositories {
 }
 
 dependencies {
+    compile([
+        'com.beust:jcommander:1.72',
+    ])
     testCompile 'junit:junit:4.12'
 }

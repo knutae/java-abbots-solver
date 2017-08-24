@@ -21,6 +21,8 @@ repositories {
 dependencies {
     compile([
         'com.beust:jcommander:1.72',
+        'io.vertx:vertx-core:3.4.2',
+        'io.vertx:vertx-web:3.4.2',
     ])
     testCompile 'junit:junit:4.12'
 }

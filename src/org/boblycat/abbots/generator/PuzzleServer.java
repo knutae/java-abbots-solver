@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.boblycat.abbots.Board;
 
@@ -37,14 +41,38 @@ public class PuzzleServer {
         }
     }
 
+    private static List<Board> generatePuzzleBoards(String name, int maxDepth) {
+        List<Board> boards = new ArrayList<>();
+        Board baseBoard = loadBoardFromResource(name);
+        PuzzleGenerator generator = new PuzzleGenerator(baseBoard, false);
+        AtomicInteger counter = new AtomicInteger();
+        generator.generate(maxDepth).forEach((abbot, map) -> {
+            int abbotIndex = counter.getAndIncrement();
+            System.out.println("Abbot '" + abbot + "': " + map.size() + " results");
+            if (!map.isEmpty()) {
+                int longest = map.values().stream().mapToInt(x -> x.length).max().getAsInt();
+                List<PuzzleSolution> longestResults = map.values().stream().filter(x -> x.length == longest)
+                        .collect(Collectors.toList());
+                System.out.println(" " + longestResults.size() + " unique puzzles with length " + longest);
+                for (PuzzleSolution s: longestResults) {
+                    //System.out.println(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
+                    //System.out.println(s.movesToString(" "));
+                    boards.add(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
+                }
+            }
+        });
+        return boards;
+    }
+
     public static void main(String argv[]) {
         Args args = new Args();
         JCommander.newBuilder().addObject(args).build().parse(argv);
         Vertx vertx = Vertx.vertx();
         StaticHandler staticHandler = StaticHandler.create(args.wwwRoot);
         Router router = Router.router(vertx);
+        PuzzleSupplier puzzleSupplier = new PuzzleSupplier(generatePuzzleBoards("example-two-bots", 70));
         router.get("/puzzle").handler(req -> {
-            Board board = loadBoardFromResource("example-one-bot");
+            Board board = puzzleSupplier.nextBoard();
             req.response().setStatusCode(200).putHeader("content-type", "text/plain").end(board.toString());
         });
         router.route("/*").handler(staticHandler);

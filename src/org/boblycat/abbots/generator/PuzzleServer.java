@@ -71,9 +71,15 @@ public class PuzzleServer {
         StaticHandler staticHandler = StaticHandler.create(args.wwwRoot);
         Router router = Router.router(vertx);
         PuzzleSupplier puzzleSupplier = new PuzzleSupplier(generatePuzzleBoards("example-two-bots", 70));
-        router.get("/puzzle").handler(req -> {
-            Board board = puzzleSupplier.nextBoard();
-            req.response().setStatusCode(200).putHeader("content-type", "text/plain").end(board.toString());
+        router.get("/api/puzzles").handler(ctx -> {
+            System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
+            ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")
+                    .end(Integer.toString(puzzleSupplier.size()));
+        });
+        router.get("/api/puzzles/:puzzleIndex").handler(ctx -> {
+            int puzzleIndex = Integer.parseInt(ctx.request().getParam("puzzleIndex"));
+            Board board = puzzleSupplier.boardAt(puzzleIndex);
+            ctx.response().setStatusCode(200).putHeader("content-type", "text/plain").end(board.toString());
         });
         router.route("/*").handler(staticHandler);
         vertx.createHttpServer().requestHandler(router::accept).listen(8080);

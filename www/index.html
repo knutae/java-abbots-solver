@@ -1,16 +1,80 @@
 <html>
   <head></head>
   <body>
+    <div id="buttons">
+      <div><button id="previous" disabled onClick="previousPuzzle()">Previous</button></div>
+      <div><button id="next" disabled onClick="nextPuzzle()">Next</button></div>
+    </div>
     <div id="game"></div>
+    <style type="text/css">
+    #buttons {
+      display: inline-block;
+      vertical-align: top;
+    }
+    #game {
+      display: inline-block;
+    }
+    button {
+      margin: 5px 10px 0 0;
+      border: none;
+      font-size: 20px;
+      box-shadow: none;
+      display: inline-block;
+      background-color: #444;
+      color: white;
+    }
+    button:disabled {
+      background-color: #ccc;
+    }
+    </style>
     <script src="js/crafty-min.js"></script>
     <script src="js/board.js"></script>
     <script src="js/wobots.js"></script>
     <script>
-      fetch('/puzzle').then(response => {
+      var index = 0;
+      var count = undefined;
+      const previousButton = document.getElementById('previous');
+      const nextButton = document.getElementById('next');
+      const gameDiv = document.getElementById('game');
+
+      function setButtonStates() {
+        console.log("setButtonStates " + index + "/" + count + " " + (index <= 0) + ":" + (index >= count-1));
+        previousButton.disabled = index <= 0;
+        nextButton.disabled = index >= count-1;
+      }
+
+      function fetchPuzzle() {
+        fetch('/api/puzzles/' + index).then(response => {
+          response.text().then(s => {
+            const board = Board.parse(s);
+            init_board(board, document.getElementById("game"));
+            setButtonStates();
+            gameDiv.focus();
+          });
+        });
+      }
+
+      function nextPuzzle() {
+        console.log("next puzzle!");
+        if (index < count-1) {
+          index++;
+          fetchPuzzle();
+        }
+      }
+
+      function previousPuzzle() {
+        console.log("previous puzzle!");
+        if (index > 0) {
+          index--;
+          fetchPuzzle();
+        }
+      }
+
+      fetch('/api/puzzles').then(response => {
         response.text().then(s => {
-          //console.log(s);
-          const board = Board.parse(s);
-          init_board(board, document.getElementById("game"));
+          count = parseInt(s);
+          //console.log("count " + count + " (" + s + ")");
+          fetchPuzzle();
         });
       });
     </script>

@@ -130,8 +130,16 @@ function draw_board(board, element) {
     }
 }
 
+var crafty_initialized = false;
+
 function init_board(board, element) {
+    if (crafty_initialized) {
+        // bah, init() does not seem to work after stop(),
+        // and keyboard focus is buggy after calling init() more than once
+        //Crafty.stop(true);
+    }
     Crafty.init(board.width * tilesize + wallsize, board.height * tilesize + wallsize, element);
+    crafty_initialized = true;
     draw_board(board, element);
     var otherAbbots = board.listAbbots();
     var activeAbbot = otherAbbots.shift();

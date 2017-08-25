@@ -1,6 +1,6 @@
-var tilesize = 50;
+var tilesize = 48;
 var innertilesize = tilesize * 0.9;
-var wallsize = 5;
+var wallsize = 6;
 var wallcolor = '#555';
 var abbotColors = {
     'r': '#f44',

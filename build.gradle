@@ -26,3 +26,18 @@ dependencies {
     ])
     testCompile 'junit:junit:4.12'
 }
+
+task testJs(type: Exec) {
+    workingDir "www"
+    commandLine "mocha"
+    standardOutput = new ByteArrayOutputStream()
+    ignoreExitValue = true
+    doLast {
+        if (execResult.exitValue != 0) {
+            println standardOutput.toString()
+            throw new GradleException("mocha testing failed, exit code " + execResult.exitValue)
+        }
+    }
+}
+
+test.dependsOn testJs

@@ -1,0 +1,18 @@
+<html>
+  <head></head>
+  <body>
+    <div id="game"></div>
+    <script src="js/crafty-min.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/wobots.js"></script>
+    <script>
+      fetch('/puzzle').then(response => {
+        response.text().then(s => {
+          //console.log(s);
+          const board = Board.parse(s);
+          init_board(board, document.getElementById("game"));
+        });
+      });
+    </script>
+  </body>
+</html>

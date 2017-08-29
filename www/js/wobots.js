@@ -141,7 +141,6 @@ function init_board(board, document) {
     craftyElement = document.createElement("div");
     parentElement.appendChild(craftyElement);
     Crafty.init(board.width * tilesize + wallsize, board.height * tilesize + wallsize, craftyElement);
-    crafty_initialized = true;
     draw_board(board);
     var otherAbbots = board.listAbbots();
     var activeAbbot = otherAbbots.shift();

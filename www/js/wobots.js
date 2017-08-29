@@ -93,7 +93,7 @@ function switch_abbot_indicator(x, y) {
     });
 }
 
-function draw_board(board, element) {
+function draw_board(board) {
     // floor tiles
     for (var x = 0; x < board.width; x++) {
         for (var y = 0; y < board.height; y++) {
@@ -130,17 +130,19 @@ function draw_board(board, element) {
     }
 }
 
-var crafty_initialized = false;
+var craftyElement = null;
 
-function init_board(board, element) {
-    if (crafty_initialized) {
-        // bah, init() does not seem to work after stop(),
-        // and keyboard focus is buggy after calling init() more than once
-        //Crafty.stop(true);
+function init_board(board, document) {
+    const parentElement = document.getElementById('game');
+    if (craftyElement) {
+        Crafty.stop(true);
+        craftyElement = null;
     }
-    Crafty.init(board.width * tilesize + wallsize, board.height * tilesize + wallsize, element);
+    craftyElement = document.createElement("div");
+    parentElement.appendChild(craftyElement);
+    Crafty.init(board.width * tilesize + wallsize, board.height * tilesize + wallsize, craftyElement);
     crafty_initialized = true;
-    draw_board(board, element);
+    draw_board(board);
     var otherAbbots = board.listAbbots();
     var activeAbbot = otherAbbots.shift();
     var activePos = board.abbots[activeAbbot];

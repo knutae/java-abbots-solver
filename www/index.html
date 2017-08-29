@@ -47,7 +47,7 @@
         fetch('/api/puzzles/' + index).then(response => {
           response.text().then(s => {
             const board = Board.parse(s);
-            init_board(board, document.getElementById("game"));
+            init_board(board, document);
             setButtonStates();
             gameDiv.focus();
           });

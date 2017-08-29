@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -41,8 +40,7 @@ public class PuzzleServer {
         }
     }
 
-    private static List<Board> generatePuzzleBoards(String name, int maxDepth) {
-        List<Board> boards = new ArrayList<>();
+    private static void generatePuzzleBoards(String name, int maxDepth, PuzzleSupplier puzzleSupplier) {
         Board baseBoard = loadBoardFromResource(name);
         PuzzleGenerator generator = new PuzzleGenerator(baseBoard, false);
         AtomicInteger counter = new AtomicInteger();
@@ -57,11 +55,11 @@ public class PuzzleServer {
                 for (PuzzleSolution s: longestResults) {
                     //System.out.println(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
                     //System.out.println(s.movesToString(" "));
-                    boards.add(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
+                    Board board = generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]);
+                    puzzleSupplier.add(board, s.movesToString(""));
                 }
             }
         });
-        return boards;
     }
 
     public static void main(String argv[]) {
@@ -70,16 +68,22 @@ public class PuzzleServer {
         Vertx vertx = Vertx.vertx();
         StaticHandler staticHandler = StaticHandler.create(args.wwwRoot);
         Router router = Router.router(vertx);
-        PuzzleSupplier puzzleSupplier = new PuzzleSupplier(generatePuzzleBoards("example-two-bots", 70));
+        PuzzleSupplier puzzleSupplier = new PuzzleSupplier();
+        generatePuzzleBoards("example-two-bots", 70, puzzleSupplier);
         router.get("/api/puzzles").handler(ctx -> {
             System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")
                     .end(Integer.toString(puzzleSupplier.size()));
         });
-        router.get("/api/puzzles/:puzzleIndex").handler(ctx -> {
+        router.get("/api/puzzles/:puzzleIndex/board").handler(ctx -> {
             int puzzleIndex = Integer.parseInt(ctx.request().getParam("puzzleIndex"));
             Board board = puzzleSupplier.boardAt(puzzleIndex);
             ctx.response().setStatusCode(200).putHeader("content-type", "text/plain").end(board.toString());
+        });
+        router.get("/api/puzzles/:puzzleIndex/solution").handler(ctx -> {
+            int puzzleIndex = Integer.parseInt(ctx.request().getParam("puzzleIndex"));
+            String solution = puzzleSupplier.solutionAt(puzzleIndex);
+            ctx.response().setStatusCode(200).putHeader("content-type", "text/plain").end(solution);
         });
         router.route("/*").handler(staticHandler);
         vertx.createHttpServer().requestHandler(router::accept).listen(8080);

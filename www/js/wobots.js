@@ -75,7 +75,7 @@ function draw_active_indicator(x, y) {
     }).origin("center").color(activecolor);
 }
 
-function move_abbot(abbot, x, y) {
+function move_abbot(abbot, x, y, moveDoneFunc) {
     Crafty('abbot:' + abbot).tween({
         x: x * tilesize + wallsize/2 + (tilesize - abbotsize)/2,
         y: y * tilesize + wallsize/2 + (tilesize - abbotsize)/2,
@@ -83,7 +83,7 @@ function move_abbot(abbot, x, y) {
     Crafty('activeAbbot').tween({
         x: x * tilesize + wallsize/2 + (tilesize - activesize)/2,
         y: y * tilesize + wallsize/2 + (tilesize - activesize)/2,
-    }, 150, "smoothStep");
+    }, 150, "smoothStep").one("TweenEnd", moveDoneFunc);
 }
 
 function switch_abbot_indicator(x, y) {
@@ -130,54 +130,115 @@ function draw_board(board) {
     }
 }
 
-var craftyElement = null;
+function _createCraftyElement(document) {
+    const parentElement = document.getElementById('game');
+    const craftyElement = document.createElement("div");
+    parentElement.appendChild(craftyElement);
+    return craftyElement;
+}
+
+class CraftyBoard {
+    constructor(board, document) {
+        this.board = board;
+        this.document = document;
+        this.craftyElement = _createCraftyElement(document);
+        this.onmovedhandlers = [];
+        this._onmove = () => {
+            for (let handler of this.onmovedhandlers) {
+                handler();
+            }
+        };
+    }
+
+    start() {
+        const board = this.board;
+        Crafty.init(board.width * tilesize + wallsize, board.height * tilesize + wallsize, this.craftyElement);
+        draw_board(board);
+        const otherAbbots = board.listAbbots();
+        let activeAbbot = otherAbbots.shift();
+        let activePos = board.abbots[activeAbbot];
+        draw_active_indicator(activePos[0], activePos[1]);
+        let awaitingKeyUp = false; // basic blocking of repeated KeyDown events
+        Crafty('*').bind('KeyDown', e => {
+            if (awaitingKeyUp) {
+                return;
+            }
+            awaitingKeyUp = true;
+            let direction;
+            if (e.key == Crafty.keys.LEFT_ARROW) {
+                direction = "left";
+            } else if (e.key == Crafty.keys.RIGHT_ARROW) {
+                direction = "right";
+            } else if (e.key == Crafty.keys.UP_ARROW) {
+                direction = "up";
+            } else if (e.key == Crafty.keys.DOWN_ARROW) {
+                direction = "down";
+            } else if (e.key == Crafty.keys.SPACE) {
+                otherAbbots.push(activeAbbot);
+                activeAbbot = otherAbbots.shift();
+                activePos = board.abbots[activeAbbot];
+                switch_abbot_indicator(activePos[0], activePos[1]);
+                //console.log("active abbot: " + activeAbbot);
+                return;
+            } else {
+                return;
+            }
+            var oldPos, newPos;
+            [oldPos, newPos] = board.move(activeAbbot, direction);
+            if (oldPos[0] === newPos[0] && oldPos[1] === newPos[1]) {
+                // no movement
+                return;
+            }
+            move_abbot(activeAbbot, newPos[0], newPos[1], this._onmove);
+        });
+        Crafty('*').bind('KeyUp', function(e) {
+            awaitingKeyUp = false;
+        });
+    }
+
+    stop() {
+        if (this.craftyElement) {
+            Crafty.stop(true);
+            this.craftyElement = null;
+        }
+    }
+
+    onmoved(cb) {
+        this.onmovedhandlers.push(cb);
+    }
+
+    canUndo() {
+        return this.board.canUndo();
+    }
+
+    canRedo() {
+        return this.board.canRedo();
+    }
+
+    undo() {
+        const historyElement = this.board.undo();
+        if (historyElement) {
+            switch_abbot_indicator(historyElement.newPos[0], historyElement.newPos[1]);
+            move_abbot(historyElement.abbot, historyElement.oldPos[0], historyElement.oldPos[1], this._onmove);
+        }
+    }
+
+    redo() {
+        const historyElement = this.board.redo();
+        if (historyElement) {
+            switch_abbot_indicator(historyElement.oldPos[0], historyElement.oldPos[1]);
+            move_abbot(historyElement.abbot, historyElement.newPos[0], historyElement.newPos[1], this._onmove);
+        }
+    }
+}
+
+var _craftyBoard = null;
 
 function init_board(board, document) {
-    const parentElement = document.getElementById('game');
-    if (craftyElement) {
-        Crafty.stop(true);
-        craftyElement = null;
+    if (_craftyBoard) {
+        _craftyBoard.stop();
     }
-    craftyElement = document.createElement("div");
-    parentElement.appendChild(craftyElement);
-    Crafty.init(board.width * tilesize + wallsize, board.height * tilesize + wallsize, craftyElement);
-    draw_board(board);
-    var otherAbbots = board.listAbbots();
-    var activeAbbot = otherAbbots.shift();
-    var activePos = board.abbots[activeAbbot];
-    draw_active_indicator(activePos[0], activePos[1]);
-    var awaitingKeyUp = false; // basic blocking of repeated KeyDown events
-    Crafty('*').bind('KeyDown', function(e) {
-        if (awaitingKeyUp) {
-            return;
-        }
-        awaitingKeyUp = true;
-        var direction;
-        if (e.key == Crafty.keys.LEFT_ARROW) {
-            direction = "left";
-        } else if (e.key == Crafty.keys.RIGHT_ARROW) {
-            direction = "right";
-        } else if (e.key == Crafty.keys.UP_ARROW) {
-            direction = "up";
-        } else if (e.key == Crafty.keys.DOWN_ARROW) {
-            direction = "down";
-        } else if (e.key == Crafty.keys.SPACE) {
-            otherAbbots.push(activeAbbot);
-            activeAbbot = otherAbbots.shift();
-            activePos = board.abbots[activeAbbot];
-            switch_abbot_indicator(activePos[0], activePos[1]);
-            //console.log("active abbot: " + activeAbbot);
-        } else {
-            return;
-        }
-        [oldPos, newPos] = board.move(activeAbbot, direction);
-        if (oldPos[0] === newPos[0] && oldPos[1] === newPos[1]) {
-            // no movement
-            return;
-        }
-        move_abbot(activeAbbot, newPos[0], newPos[1]);
-    });
-    Crafty('*').bind('KeyUp', function(e) {
-        awaitingKeyUp = false;
-    });
+    _craftyBoard = new CraftyBoard(board, document);
+    _craftyBoard.start();
+    return _craftyBoard;
 }

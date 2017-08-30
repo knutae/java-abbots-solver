@@ -58,6 +58,173 @@ describe('Board', function() {
             assert.deepEqual(b.abbots['r'], [2, 1]);
         });
     });
+    describe("#move", function() {
+        it("should return old and new position", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            var oldPos, newPos;
+            [oldPos, newPos] = b.move('r', 'right');
+            assert.deepEqual(oldPos, [1, 1]);
+            assert.deepEqual(newPos, [2, 1]);
+        });
+        it("should stop at outer walls", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+            b.move('r', 'left');
+            assert.deepEqual(b.abbots['r'], [0, 1]);
+            b.move('r', 'down');
+            assert.deepEqual(b.abbots['r'], [0, 2]);
+            b.move('r', 'right');
+            assert.deepEqual(b.abbots['r'], [2, 2]);
+            b.move('r', 'up');
+            assert.deepEqual(b.abbots['r'], [2, 0]);
+        });
+        it("should stop at other abbots", function() {
+            var b = new Board(4, 4);
+            b.setAbbot('r', 0, 0);
+            b.setAbbot('a', 0, 3);
+            b.setAbbot('b', 3, 2);
+            b.setAbbot('c', 2, 0);
+            b.move('r', 'down');
+            assert.deepEqual(b.abbots['r'], [0, 2]);
+            b.move('r', 'right');
+            assert.deepEqual(b.abbots['r'], [2, 2]);
+            b.move('r', 'up');
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+        });
+    });
+    describe("#canUndo", function() {
+        it("should return false before move", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            assert.equal(b.canUndo(), false);
+        });
+        it("should return true after move", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            assert.equal(b.canUndo(), true);
+        });
+    });
+    describe("#undo", function() {
+        it("should do nothing if the history is empty", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+        });
+        it("should reset to initial position", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+        });
+        it("should revert multiple moves", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+            b.move('r', 'down');
+            assert.deepEqual(b.abbots['r'], [2, 2]);
+            b.move('r', 'left');
+            assert.deepEqual(b.abbots['r'], [0, 2]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [2, 2]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+        });
+        it("should handle alternating undo and move", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            b.move('r', 'down');
+            b.move('r', 'left');
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [2, 2]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+            b.move('r', 'left');
+            assert.deepEqual(b.abbots['r'], [0, 1]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+        });
+    });
+    describe("#canRedo", function() {
+        it("should return false before undo", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            assert.equal(b.canRedo(), false);
+            b.move('r', 'right');
+            assert.equal(b.canRedo(), false);
+        });
+        it("should return true after undo", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            b.undo();
+            assert.equal(b.canRedo(), true);
+        });
+        it("should return false after undo and move", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            b.undo();
+            b.move('r', 'right');
+            assert.equal(b.canRedo(), false);
+        });
+    });
+    describe("#redo", function() {
+        it("should do nothing before undo", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.redo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+            b.move('r', 'right');
+            b.redo();
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+        });
+        it("should replay move after undo", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+            b.redo();
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+        });
+        it("should replay multiple moves after undos", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            b.move('r', 'up');
+            b.undo();
+            b.undo();
+            assert.deepEqual(b.abbots['r'], [1, 1]);
+            b.redo();
+            assert.deepEqual(b.abbots['r'], [2, 1]);
+            b.redo();
+            assert.deepEqual(b.abbots['r'], [2, 0]);
+        });
+        it("should not replay after undo and move", function() {
+            var b = new Board(3, 3);
+            b.setAbbot('r', 1, 1);
+            b.move('r', 'right');
+            b.undo();
+            b.move('r', 'down');
+            assert.deepEqual(b.abbots['r'], [1, 2]);
+            b.redo();
+            assert.deepEqual(b.abbots['r'], [1, 2]);
+        });
+    });
     describe("#parse", function() {
         var b;
         beforeEach(function() {

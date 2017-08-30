@@ -1,13 +1,17 @@
 <html>
   <head></head>
   <body>
-    <div id="buttons">
+    <div id="menu">
       <div><button id="previous" disabled onClick="previousPuzzle()">Previous</button></div>
       <div><button id="next" disabled onClick="nextPuzzle()">Next</button></div>
+      <div>
+        <button id="undo" disabled onClick="undo()">&lt;</button>
+        <button id="redo" disabled onClick="redo()">&gt;</button>
+      </div>
     </div>
     <div id="game"></div>
     <style type="text/css">
-    #buttons {
+    #menu {
       display: inline-block;
       vertical-align: top;
     }
@@ -32,22 +36,43 @@
     <script src="js/wobots.js"></script>
     <script>
       var index = 0;
-      var count = undefined;
+      var count = null;
+      var craftyBoard = null;
       const previousButton = document.getElementById('previous');
       const nextButton = document.getElementById('next');
+      const undoButton = document.getElementById('undo');
+      const redoButton = document.getElementById('redo');
       const gameDiv = document.getElementById('game');
 
       function setButtonStates() {
-        console.log("setButtonStates " + index + "/" + count + " " + (index <= 0) + ":" + (index >= count-1));
+        //console.log("setButtonStates " + index + "/" + count + " " + (index <= 0) + ":" + (index >= count-1));
         previousButton.disabled = index <= 0;
         nextButton.disabled = index >= count-1;
+        undoButton.disabled = !craftyBoard || !craftyBoard.canUndo();
+        redoButton.disabled = !craftyBoard || !craftyBoard.canRedo();
+      }
+
+      function undo() {
+        if (craftyBoard) {
+          console.log("undo A, count=" + craftyBoard.board.moveCount);
+          craftyBoard.undo();
+          console.log("undo B, count=" + craftyBoard.board.moveCount);
+        }
+      }
+
+      function redo() {
+        if (craftyBoard) {
+          craftyBoard.redo();
+        }
       }
 
       function fetchPuzzle() {
+        craftyBoard = null;
         fetch('/api/puzzles/' + index + '/board').then(response => {
           response.text().then(s => {
             const board = Board.parse(s);
-            init_board(board, document);
+            craftyBoard = init_board(board, document);
+            craftyBoard.onmoved(setButtonStates);
             setButtonStates();
             gameDiv.focus();
           });

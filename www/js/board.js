@@ -17,6 +17,8 @@ class Board {
         this.verticalWalls = create2dWallArray(height, width+1);
         this.abbots = {};
         this.targets = {};
+        this.history = [];
+        this.moveCount = 0;
     }
 
     addHorizontalWall(x, y) {
@@ -132,8 +134,43 @@ class Board {
                 this.abbots[abbot] = [i, posy];
                 break;
         }
+        // update history if old pos != new pos
+        if (posx !== this.abbots[abbot] || posy !== this.abbots[abbot]) {
+            const historyElement = {abbot: abbot, oldPos: [posx, posy], newPos: this.abbots[abbot]};
+            this.history = this.history.slice(0, this.moveCount);
+            this.history.push(historyElement);
+            this.moveCount++;
+        }
         // return old + new position
         return [[posx, posy], this.abbots[abbot]]
+    }
+
+    canUndo() {
+        return this.moveCount > 0;
+    }
+
+    undo() {
+        if (!this.canUndo()) {
+            return null;
+        }
+        const historyElement = this.history[this.moveCount-1];
+        this.abbots[historyElement.abbot] = historyElement.oldPos;
+        this.moveCount--;
+        return historyElement;
+    }
+
+    canRedo() {
+        return this.moveCount < this.history.length;
+    }
+
+    redo() {
+        if (!this.canRedo()) {
+            return null;
+        }
+        const historyElement = this.history[this.moveCount];
+        this.abbots[historyElement.abbot] = historyElement.newPos;
+        this.moveCount++;
+        return historyElement;
     }
 
     static parse(input) {

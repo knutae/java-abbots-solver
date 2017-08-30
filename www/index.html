@@ -8,6 +8,7 @@
         <button id="undo" disabled onClick="undo()">&lt;</button>
         <button id="redo" disabled onClick="redo()">&gt;</button>
       </div>
+      <div><button id="cheat" disabled onClick="cheat()">Cheat!</button></div>
     </div>
     <div id="game"></div>
     <style type="text/css">
@@ -42,6 +43,7 @@
       const nextButton = document.getElementById('next');
       const undoButton = document.getElementById('undo');
       const redoButton = document.getElementById('redo');
+      const cheatButton = document.getElementById('cheat');
       const gameDiv = document.getElementById('game');
 
       function setButtonStates() {
@@ -50,6 +52,7 @@
         nextButton.disabled = index >= count-1;
         undoButton.disabled = !craftyBoard || !craftyBoard.canUndo();
         redoButton.disabled = !craftyBoard || !craftyBoard.canRedo();
+        cheatButton.disabled = !craftyBoard;
       }
 
       function undo() {
@@ -75,6 +78,23 @@
             craftyBoard.onmoved(setButtonStates);
             setButtonStates();
             gameDiv.focus();
+          });
+        });
+      }
+
+      function cheat() {
+        craftyBoard = null;
+        fetch('/api/puzzles/' + index + '/board').then(response => {
+          response.text().then(s => {
+            const board = Board.parse(s);
+            fetch('/api/puzzles/' + index + '/solution').then(solution => {
+              solution.text().then(sol => {
+                craftyBoard = init_board_with_solution(board, document, sol);
+                craftyBoard.onmoved(setButtonStates);
+                setButtonStates();
+                gameDiv.focus();
+              });
+            });
           });
         });
       }

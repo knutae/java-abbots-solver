@@ -242,3 +242,26 @@ function init_board(board, document) {
     _craftyBoard.start();
     return _craftyBoard;
 }
+
+function _direction_char(c) {
+    switch (c) {
+        case "<": return "left";
+        case ">": return "right";
+        case "^": return "up";
+        case ",": return "down";
+        default: throw new Error("Not a valid direction: " + c);
+    }
+}
+
+function init_board_with_solution(board, document, solution) {
+    init_board(board, document);
+    for (let i = 0; i < solution.length/2; i++) {
+        const abbot = solution[i*2];
+        const direction = _direction_char(solution[i*2+1]);
+        board.move(abbot, direction);
+    }
+    while (board.canUndo()) {
+        board.undo();
+    }
+    return _craftyBoard;
+}

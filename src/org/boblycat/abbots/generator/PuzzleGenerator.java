@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -77,14 +76,21 @@ class PuzzleKey {
 class PuzzleSolution {
     final PuzzleKey key;
     final Move move;
-    final PuzzleSolution parent;
+    final List<PuzzleSolution> parents;
     final int length;
 
     public PuzzleSolution(PuzzleKey key, PuzzleSolution parent, Move thisMove) {
         this.key = key;
-        this.parent = parent;
+        this.parents = new ArrayList<>();
+        if (parent != null) {
+            parents.add(parent);
+        }
         this.move = thisMove;
         this.length = parent == null ? 0 : parent.length + 1;
+    }
+
+    public boolean isUnique() {
+        return parents.isEmpty() || (parents.size() == 1 && parents.get(0).isUnique());
     }
 
     public String movesToString(String sep) {
@@ -96,7 +102,7 @@ class PuzzleSolution {
         PuzzleSolution node = this;
         while (node != null && node.move != null) {
             moves.add(node.move);
-            node = node.parent;
+            node = node.parents.isEmpty() ? null : node.parents.get(0);
         }
         Collections.reverse(moves);
 
@@ -131,6 +137,9 @@ class PostProcessing {
             Collection<PuzzleSolution> solutions) {
         Map<Position, List<PuzzleSolution>> result = new HashMap<>();
         for (PuzzleSolution solution: solutions) {
+            if (!solution.isUnique()) {
+                continue;
+            }
             Position pos = solution.key.abbotPositions[abbotIndex];
             List<PuzzleSolution> list = result.computeIfAbsent(pos, _pos -> new ArrayList<>());
             if (list.isEmpty()) {
@@ -201,7 +210,6 @@ public class PuzzleGenerator {
     public SortedMap<Character, Map<Position, PuzzleSolution>> generate(int maxDepth) {
         PuzzleSolution root = new PuzzleSolution(new PuzzleKey(originalAbbots), null, null);
         HashMap<PuzzleKey, PuzzleSolution> nodes = new HashMap<>();
-        HashSet<PuzzleKey> duplicates = new HashSet<>();
         List<PuzzleSolution> currentNodes = new ArrayList<>();
         currentNodes.add(root);
         for (int depth = 1; depth <= maxDepth; depth++) {
@@ -219,15 +227,10 @@ public class PuzzleGenerator {
                     }
                     needsReset = true;
                     PuzzleKey newKey = new PuzzleKey(board.getAbbots());
-                    if (duplicates.contains(newKey)) {
-                        // already marked as a duplicate, ignore
-                        continue;
-                    }
-                    if (nextNodes.containsKey(newKey)) {
-                        // found a duplicate solution at this depth, remove from the results
-                        nextNodes.remove(newKey);
-                        nodes.remove(newKey);
-                        duplicates.add(newKey);
+                    PuzzleSolution existingSolution = nextNodes.get(newKey);
+                    if (existingSolution != null) {
+                        // found an existing at this depth
+                        existingSolution.parents.add(node);
                         continue;
                     }
                     if (nodes.containsKey(newKey)) {
@@ -240,8 +243,7 @@ public class PuzzleGenerator {
                 }
             }
             if (verbose) {
-                System.out.println("Depth " + depth + ", nodes " + nodes.size() + ", duplicates " + duplicates.size()
-                        + ", current " + nextNodes.size());
+                System.out.println("Depth " + depth + ", nodes " + nodes.size() + ", current " + nextNodes.size());
             }
             if (nextNodes.isEmpty()) {
                 if (verbose) {

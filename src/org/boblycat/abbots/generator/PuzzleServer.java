@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,9 +16,33 @@ import org.boblycat.abbots.Board;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
+import io.netty.util.internal.StringUtil;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
+
+class ParamGetter {
+    final RoutingContext ctx;
+
+    ParamGetter(RoutingContext ctx) {
+        this.ctx = ctx;
+    }
+
+    String strv(String key, String defaultValue) {
+        String s = ctx.request().getParam(key);
+        return StringUtil.isNullOrEmpty(s) ? defaultValue : s;
+    }
+
+    int intv(String key, int defaultValue) {
+        String s = ctx.request().getParam(key);
+        return StringUtil.isNullOrEmpty(s) ? defaultValue : Integer.parseInt(s);
+    }
+
+    boolean boolv(String key) {
+        return ctx.request().params().contains(key);
+    }
+}
 
 public class PuzzleServer {
     private static class Args {
@@ -76,11 +101,27 @@ public class PuzzleServer {
         Vertx vertx = Vertx.vertx();
         StaticHandler staticHandler = StaticHandler.create(args.wwwRoot);
         Router router = Router.router(vertx);
+        // FIXME: this in no way supports more than one client. Fix some day, or not :)
         PuzzleSupplier puzzleSupplier = new PuzzleSupplier();
-        //generatePuzzleBoards("example-two-bots", 70, puzzleSupplier);
-        generatePuzzleBoards("example-four-bots", 10, puzzleSupplier, List.of(PuzzleCondition.unique(),
-                PuzzleCondition.notAtEdge(), PuzzleCondition.inCorner(), PuzzleCondition.differentBotsMovedAtLeast(2)));
         router.get("/api/puzzles").handler(ctx -> {
+            ParamGetter pg = new ParamGetter(ctx);
+            List<PuzzleCondition> conditions = new ArrayList<>();
+            if (pg.boolv("unique")) {
+                conditions.add(PuzzleCondition.unique());
+            }
+            if (pg.boolv("notAtEdge")) {
+                conditions.add(PuzzleCondition.notAtEdge());
+            }
+            if (pg.boolv("inCorner")) {
+                conditions.add(PuzzleCondition.inCorner());
+            }
+            int bots = pg.intv("bots", 0);
+            if (bots > 1) {
+                conditions.add(PuzzleCondition.differentBotsMovedAtLeast(bots));
+            }
+            puzzleSupplier.clear();
+            generatePuzzleBoards(pg.strv("board", "example-four-bots"), pg.intv("depth", 10), puzzleSupplier,
+                    conditions);
             System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")
                     .end(Integer.toString(puzzleSupplier.size()));

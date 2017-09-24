@@ -33,4 +33,8 @@ public class PuzzleSupplier {
     int size() {
         return boards.size();
     }
+
+    public void clear() {
+        boards.clear();
+    }
 }

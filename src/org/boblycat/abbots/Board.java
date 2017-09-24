@@ -256,6 +256,14 @@ public class Board {
         return height;
     }
 
+    public boolean hasHorizontalWall(int x, int y) {
+        return horizontalWalls[x][y];
+    }
+
+    public boolean hasVerticalWall(int x, int y) {
+        return verticalWalls[y][x];
+    }
+
     @SuppressWarnings("unchecked")
     public Board cloneBoard() {
         Board copy = new Board();

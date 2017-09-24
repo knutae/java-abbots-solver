@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -40,11 +41,12 @@ public class PuzzleServer {
         }
     }
 
-    private static void generatePuzzleBoards(String name, int maxDepth, PuzzleSupplier puzzleSupplier) {
+    private static void generatePuzzleBoards(String name, int maxDepth, PuzzleSupplier puzzleSupplier,
+            Collection<PuzzleCondition> conditions) {
         Board baseBoard = loadBoardFromResource(name);
         PuzzleGenerator generator = new PuzzleGenerator(baseBoard, false);
         AtomicInteger counter = new AtomicInteger();
-        generator.generate(maxDepth).forEach((abbot, map) -> {
+        generator.generate(maxDepth, conditions).forEach((abbot, map) -> {
             int abbotIndex = counter.getAndIncrement();
             System.out.println("Abbot '" + abbot + "': " + map.size() + " results");
             if (!map.isEmpty()) {
@@ -69,7 +71,9 @@ public class PuzzleServer {
         StaticHandler staticHandler = StaticHandler.create(args.wwwRoot);
         Router router = Router.router(vertx);
         PuzzleSupplier puzzleSupplier = new PuzzleSupplier();
-        generatePuzzleBoards("example-two-bots", 70, puzzleSupplier);
+        //generatePuzzleBoards("example-two-bots", 70, puzzleSupplier);
+        generatePuzzleBoards("example-four-bots", 10, puzzleSupplier, List.of(PuzzleCondition.unique(),
+                PuzzleCondition.inCorner(), PuzzleCondition.differentBotsMovedAtLeast(2)));
         router.get("/api/puzzles").handler(ctx -> {
             System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")

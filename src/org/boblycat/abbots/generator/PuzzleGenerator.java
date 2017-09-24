@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -93,6 +94,16 @@ class PuzzleSolution {
         return parents.isEmpty() || (parents.size() == 1 && parents.get(0).isUnique());
     }
 
+    public int differentBotsMoved() {
+        // Note: this probably only makes sense for unique solutions
+        // This could be optimized, e.g use a boolean array
+        HashSet<Character> bots = new HashSet<>();
+        for (PuzzleSolution s = this; s.move != null; s = s.parents.get(0)) {
+            bots.add(s.move.abbot);
+        }
+        return bots.size();
+    }
+
     public String movesToString(String sep) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
@@ -133,8 +144,8 @@ class PuzzleSolution {
 }
 
 class PostProcessing {
-    static Map<Position, List<PuzzleSolution>> findPuzzlesPerPosition(int abbotIndex,
-            Collection<PuzzleSolution> solutions) {
+    static Map<Position, List<PuzzleSolution>> findPuzzlesPerPosition(Board board, int abbotIndex,
+            Collection<PuzzleSolution> solutions, Collection<PuzzleCondition> conditions) {
         Map<Position, List<PuzzleSolution>> result = new HashMap<>();
         for (PuzzleSolution solution: solutions) {
             Position pos = solution.key.abbotPositions[abbotIndex];
@@ -154,26 +165,32 @@ class PostProcessing {
                 }
             }
         }
-        // Remove all non-unique solutions
-        for (List<PuzzleSolution> solutionsForPos: result.values()) {
-            solutionsForPos.removeIf(s -> !s.isUnique());
+        // Remove all solutions not matching each condition
+        for (PuzzleCondition condition: conditions) {
+            for (Entry<Position, List<PuzzleSolution>> entry: result.entrySet()) {
+                Position position = entry.getKey();
+                entry.getValue().removeIf(s -> !condition.includeSolution(board, position, s));
+            }
         }
+        // Remove empty entries
         result.values().removeIf(solutionsForPos -> solutionsForPos.isEmpty());
         return result;
     }
 
-    static Map<Position, PuzzleSolution> findUniquePuzzlesForAbbotPerPosition(int abbotIndex,
-            Collection<PuzzleSolution> solutions) {
-        return findPuzzlesPerPosition(abbotIndex, solutions).entrySet().stream().filter(e -> e.getValue().size() == 1)
+    static Map<Position, PuzzleSolution> findUniquePuzzlesForAbbotPerPosition(Board board, int abbotIndex,
+            Collection<PuzzleSolution> solutions, Collection<PuzzleCondition> conditions) {
+        return findPuzzlesPerPosition(board, abbotIndex, solutions, conditions).entrySet().stream()
+                .filter(e -> e.getValue().size() == 1)
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().get(0)));
     }
 
-    static SortedMap<Character, Map<Position, PuzzleSolution>> findUniquePuzzlesPerAbbotAndPosition(
-            Collection<Character> abbots, Collection<PuzzleSolution> solutions) {
+    static SortedMap<Character, Map<Position, PuzzleSolution>> findUniquePuzzlesPerAbbotAndPosition(Board board,
+            Collection<Character> abbots, Collection<PuzzleSolution> solutions,
+            Collection<PuzzleCondition> conditions) {
         AtomicInteger abbotIndex = new AtomicInteger(0);
         SortedMap<Character, Map<Position, PuzzleSolution>> result = new TreeMap<>();
         abbots.stream().sorted().forEach(abbot -> {
-            result.put(abbot, findUniquePuzzlesForAbbotPerPosition(abbotIndex.get(), solutions));
+            result.put(abbot, findUniquePuzzlesForAbbotPerPosition(board, abbotIndex.get(), solutions, conditions));
             abbotIndex.incrementAndGet();
         });
         return result;
@@ -209,7 +226,8 @@ public class PuzzleGenerator {
         }
     }
 
-    public SortedMap<Character, Map<Position, PuzzleSolution>> generate(int maxDepth) {
+    public SortedMap<Character, Map<Position, PuzzleSolution>> generate(int maxDepth,
+            Collection<PuzzleCondition> conditions) {
         PuzzleSolution root = new PuzzleSolution(new PuzzleKey(originalAbbots), null, null);
         HashMap<PuzzleKey, PuzzleSolution> nodes = new HashMap<>();
         List<PuzzleSolution> currentNodes = new ArrayList<>();
@@ -256,7 +274,8 @@ public class PuzzleGenerator {
             currentNodes.clear();
             currentNodes.addAll(nextNodes.values());
         }
-        return PostProcessing.findUniquePuzzlesPerAbbotAndPosition(board.getAbbots().keySet(), nodes.values());
+        return PostProcessing.findUniquePuzzlesPerAbbotAndPosition(board, board.getAbbots().keySet(), nodes.values(),
+                conditions);
     }
 
     public Board boardWithTarget(char abbot, Position targetPosition) {
@@ -288,7 +307,8 @@ public class PuzzleGenerator {
         //System.out.println("Using " + cpus + " threads");
         //String solution = solver.solveMultiThreaded(cpus, " ");
         //String solution = solver.solveMultiThreaded(4, " ");
-        Map<Character, Map<Position, PuzzleSolution>> results = generator.generate(args.maxDepth);
+        Map<Character, Map<Position, PuzzleSolution>> results = generator.generate(args.maxDepth,
+                Collections.singleton(PuzzleCondition.unique()));
         long endTime = System.currentTimeMillis();
         AtomicInteger counter = new AtomicInteger();
         results.forEach((abbot, r) -> {

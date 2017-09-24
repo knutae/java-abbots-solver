@@ -137,9 +137,6 @@ class PostProcessing {
             Collection<PuzzleSolution> solutions) {
         Map<Position, List<PuzzleSolution>> result = new HashMap<>();
         for (PuzzleSolution solution: solutions) {
-            if (!solution.isUnique()) {
-                continue;
-            }
             Position pos = solution.key.abbotPositions[abbotIndex];
             List<PuzzleSolution> list = result.computeIfAbsent(pos, _pos -> new ArrayList<>());
             if (list.isEmpty()) {
@@ -157,6 +154,11 @@ class PostProcessing {
                 }
             }
         }
+        // Remove all non-unique solutions
+        for (List<PuzzleSolution> solutionsForPos: result.values()) {
+            solutionsForPos.removeIf(s -> !s.isUnique());
+        }
+        result.values().removeIf(solutionsForPos -> solutionsForPos.isEmpty());
         return result;
     }
 

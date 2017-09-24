@@ -25,6 +25,6 @@ public interface PuzzleCondition {
     }
 
     static PuzzleCondition differentBotsMovedAtLeast(int n) {
-        return (b, p, s) -> s.differentBotsMoved() >= n;
+        return (b, p, s) -> s.minimumDifferentBotsMoved() >= n;
     }
 }

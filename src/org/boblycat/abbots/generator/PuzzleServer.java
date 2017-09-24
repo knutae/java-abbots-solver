@@ -55,6 +55,12 @@ public class PuzzleServer {
                         .collect(Collectors.toList());
                 System.out.println(" " + longestResults.size() + " unique puzzles with length " + longest);
                 for (PuzzleSolution s: longestResults) {
+                    /*
+                    for (List<Move> moves: s.enumerateMoves()) {
+                        System.out.println(
+                                " " + moves.stream().map(m -> m.abbot + "|" + m.dir).collect(Collectors.joining(", ")));
+                    }
+                    */
                     //System.out.println(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
                     //System.out.println(s.movesToString(" "));
                     Board board = generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]);
@@ -72,8 +78,9 @@ public class PuzzleServer {
         Router router = Router.router(vertx);
         PuzzleSupplier puzzleSupplier = new PuzzleSupplier();
         //generatePuzzleBoards("example-two-bots", 70, puzzleSupplier);
-        generatePuzzleBoards("example-four-bots", 10, puzzleSupplier, List.of(PuzzleCondition.unique(),
-                PuzzleCondition.inCorner(), PuzzleCondition.differentBotsMovedAtLeast(2)));
+        generatePuzzleBoards("example-four-bots", 10, puzzleSupplier, List.of(
+                //PuzzleCondition.unique(),
+                PuzzleCondition.notAtEdge(), PuzzleCondition.inCorner(), PuzzleCondition.differentBotsMovedAtLeast(3)));
         router.get("/api/puzzles").handler(ctx -> {
             System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")

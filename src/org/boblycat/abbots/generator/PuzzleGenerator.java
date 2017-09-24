@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,6 +30,11 @@ class Move {
     Move(char abbot, Board.Direction dir) {
         this.abbot = abbot;
         this.dir = dir;
+    }
+
+    @Override
+    public String toString() {
+        return "Move(" + abbot + " " + dir + ")";
     }
 }
 
@@ -94,14 +98,29 @@ class PuzzleSolution {
         return parents.isEmpty() || (parents.size() == 1 && parents.get(0).isUnique());
     }
 
-    public int differentBotsMoved() {
-        // Note: this probably only makes sense for unique solutions
-        // This could be optimized, e.g use a boolean array
-        HashSet<Character> bots = new HashSet<>();
-        for (PuzzleSolution s = this; s.move != null; s = s.parents.get(0)) {
-            bots.add(s.move.abbot);
+    public List<List<Move>> enumerateMoves() {
+        if (move == null) {
+            return Collections.singletonList(Collections.emptyList());
         }
-        return bots.size();
+        List<List<Move>> result = new ArrayList<>();
+        for (PuzzleSolution parentSolution: parents) {
+            for (List<Move> parentMoves: parentSolution.enumerateMoves()) {
+                List<Move> extendedMoves = new ArrayList<>(parentMoves.size() + 1);
+                extendedMoves.addAll(parentMoves);
+                extendedMoves.add(move);
+                result.add(Collections.unmodifiableList(extendedMoves));
+            }
+        }
+        return result;
+    }
+
+    public int minimumDifferentBotsMoved() {
+        int min = Integer.MAX_VALUE;
+        for (List<Move> moves: enumerateMoves()) {
+            int numBots = moves.stream().map(m -> m.abbot).collect(Collectors.toSet()).size();
+            min = Math.min(min, numBots);
+        }
+        return min;
     }
 
     public String movesToString(String sep) {
@@ -166,10 +185,14 @@ class PostProcessing {
             }
         }
         // Remove all solutions not matching each condition
-        for (PuzzleCondition condition: conditions) {
-            for (Entry<Position, List<PuzzleSolution>> entry: result.entrySet()) {
-                Position position = entry.getKey();
-                entry.getValue().removeIf(s -> !condition.includeSolution(board, position, s));
+        for (Entry<Position, List<PuzzleSolution>> entry: result.entrySet()) {
+            Position position = entry.getKey();
+            List<PuzzleSolution> solutionsForPos = entry.getValue();
+            for (PuzzleCondition condition: conditions) {
+                if (!solutionsForPos.stream().allMatch(s -> condition.includeSolution(board, position, s))) {
+                    solutionsForPos.clear();
+                    break;
+                }
             }
         }
         // Remove empty entries

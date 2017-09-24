@@ -78,9 +78,8 @@ public class PuzzleServer {
         Router router = Router.router(vertx);
         PuzzleSupplier puzzleSupplier = new PuzzleSupplier();
         //generatePuzzleBoards("example-two-bots", 70, puzzleSupplier);
-        generatePuzzleBoards("example-four-bots", 10, puzzleSupplier, List.of(
-                //PuzzleCondition.unique(),
-                PuzzleCondition.notAtEdge(), PuzzleCondition.inCorner(), PuzzleCondition.differentBotsMovedAtLeast(3)));
+        generatePuzzleBoards("example-four-bots", 10, puzzleSupplier, List.of(PuzzleCondition.unique(),
+                PuzzleCondition.notAtEdge(), PuzzleCondition.inCorner(), PuzzleCondition.differentBotsMovedAtLeast(2)));
         router.get("/api/puzzles").handler(ctx -> {
             System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")

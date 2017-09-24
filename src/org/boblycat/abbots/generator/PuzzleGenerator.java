@@ -255,6 +255,7 @@ public class PuzzleGenerator {
         HashMap<PuzzleKey, PuzzleSolution> nodes = new HashMap<>();
         List<PuzzleSolution> currentNodes = new ArrayList<>();
         currentNodes.add(root);
+        int lastDepth = 0;
         for (int depth = 1; depth <= maxDepth; depth++) {
             Map<PuzzleKey, PuzzleSolution> nextNodes = new HashMap<>();
             for (PuzzleSolution node: currentNodes) {
@@ -296,9 +297,17 @@ public class PuzzleGenerator {
             }
             currentNodes.clear();
             currentNodes.addAll(nextNodes.values());
+            lastDepth = depth;
         }
-        return PostProcessing.findUniquePuzzlesPerAbbotAndPosition(board, board.getAbbots().keySet(), nodes.values(),
-                conditions);
+        if (verbose) {
+            System.out.println("Before post processing: " + nodes.size() + ", depth " + lastDepth);
+        }
+        SortedMap<Character, Map<Position, PuzzleSolution>> result = PostProcessing
+                .findUniquePuzzlesPerAbbotAndPosition(board, board.getAbbots().keySet(), nodes.values(), conditions);
+        if (verbose) {
+            System.out.println("After post processing: " + result.values().stream().mapToInt(Map::size).sum());
+        }
+        return result;
     }
 
     public Board boardWithTarget(char abbot, Position targetPosition) {

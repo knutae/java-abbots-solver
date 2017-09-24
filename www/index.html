@@ -9,6 +9,7 @@
         <button id="redo" disabled onClick="redo()">&gt;</button>
       </div>
       <div><button id="cheat" disabled onClick="cheat()">Cheat!</button></div>
+      <div id="counter">0</div>
     </div>
     <div id="game"></div>
     <style type="text/css">
@@ -28,6 +29,11 @@
       background-color: #444;
       color: white;
     }
+    #counter {
+      font-size: 20px;
+      color: #444;
+      margin: 5px 10px 0 5px;
+    }
     button:disabled {
       background-color: #ccc;
     }
@@ -45,6 +51,7 @@
       const redoButton = document.getElementById('redo');
       const cheatButton = document.getElementById('cheat');
       const gameDiv = document.getElementById('game');
+      const counterDiv = document.getElementById('counter');
 
       function setButtonStates() {
         //console.log("setButtonStates " + index + "/" + count + " " + (index <= 0) + ":" + (index >= count-1));
@@ -53,6 +60,7 @@
         undoButton.disabled = !craftyBoard || !craftyBoard.canUndo();
         redoButton.disabled = !craftyBoard || !craftyBoard.canRedo();
         cheatButton.disabled = !craftyBoard;
+        counterDiv.textContent = craftyBoard ? craftyBoard.board.moveCount : '';
       }
 
       function undo() {

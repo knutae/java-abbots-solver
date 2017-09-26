@@ -106,6 +106,9 @@ public class PuzzleServer {
         router.get("/api/puzzles").handler(ctx -> {
             ParamGetter pg = new ParamGetter(ctx);
             List<PuzzleCondition> conditions = new ArrayList<>();
+            // Due to limitations in the serialized bot format, we require that
+            // the target and a bot cannot be at the same position.
+            conditions.add(PuzzleCondition.noBotAtTarget());
             if (pg.boolv("unique")) {
                 conditions.add(PuzzleCondition.unique());
             }

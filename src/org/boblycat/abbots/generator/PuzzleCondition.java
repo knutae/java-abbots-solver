@@ -27,4 +27,11 @@ public interface PuzzleCondition {
     static PuzzleCondition differentBotsMovedAtLeast(int n) {
         return (b, p, s) -> s.minimumDifferentBotsMoved() >= n;
     }
+
+    static PuzzleCondition noBotAtTarget() {
+        return (b, p, s) -> {
+            //System.err.println(p + " vs " + b.getAbbots().values() + " --> " + !b.getAbbots().values().contains(p));
+            return !b.getAbbots().values().contains(p);
+        };
+    }
 }

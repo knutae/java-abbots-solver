@@ -82,7 +82,8 @@
 
       function fetchPuzzle() {
         craftyBoard = null;
-        fetch('/api/puzzles/' + index + '/board').then(response => {
+        fetch('/api/puzzles/' + index + '/board' + window.location.search)
+        .then(response => {
           response.text().then(s => {
             const board = Board.parse(s);
             craftyBoard = init_board(board, document);
@@ -95,10 +96,12 @@
 
       function cheat() {
         craftyBoard = null;
-        fetch('/api/puzzles/' + index + '/board').then(response => {
+        fetch('/api/puzzles/' + index + '/board' + window.location.search)
+        .then(response => {
           response.text().then(s => {
             const board = Board.parse(s);
-            fetch('/api/puzzles/' + index + '/solution').then(solution => {
+            fetch('/api/puzzles/' + index + '/solution' + window.location.search)
+            .then(solution => {
               solution.text().then(sol => {
                 craftyBoard = init_board_with_solution(board, document, sol);
                 craftyBoard.onmoved(setButtonStates);

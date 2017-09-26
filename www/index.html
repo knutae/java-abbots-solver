@@ -2,6 +2,7 @@
   <head></head>
   <body>
     <div id="menu">
+      <div class="label" id="puzzleText">...</div>
       <div><button id="previous" disabled onClick="previousPuzzle()">Previous</button></div>
       <div><button id="next" disabled onClick="nextPuzzle()">Next</button></div>
       <div>
@@ -9,7 +10,7 @@
         <button id="redo" disabled onClick="redo()">&gt;</button>
       </div>
       <div><button id="cheat" disabled onClick="cheat()">Cheat!</button></div>
-      <div id="counter">0</div>
+      <div class="label" id="counter">0</div>
     </div>
     <div id="game"></div>
     <style type="text/css">
@@ -29,7 +30,7 @@
       background-color: #444;
       color: white;
     }
-    #counter {
+    .label {
       font-size: 20px;
       color: #444;
       margin: 5px 10px 0 5px;
@@ -52,6 +53,7 @@
       const cheatButton = document.getElementById('cheat');
       const gameDiv = document.getElementById('game');
       const counterDiv = document.getElementById('counter');
+      const puzzleTextDiv = document.getElementById('puzzleText');
 
       function setButtonStates() {
         //console.log("setButtonStates " + index + "/" + count + " " + (index <= 0) + ":" + (index >= count-1));
@@ -61,6 +63,7 @@
         redoButton.disabled = !craftyBoard || !craftyBoard.canRedo();
         cheatButton.disabled = !craftyBoard;
         counterDiv.textContent = craftyBoard ? craftyBoard.board.moveCount : '';
+        puzzleTextDiv.textContent = count ? `Puzzle ${index+1}/${count}` : 'No puzzles!';
       }
 
       function undo() {

@@ -133,7 +133,11 @@
         response.text().then(s => {
           count = parseInt(s);
           //console.log("count " + count + " (" + s + ")");
-          fetchPuzzle();
+          if (count > 0) {
+            fetchPuzzle();
+          } else {
+            setButtonStates();
+          }
         });
       });
     </script>

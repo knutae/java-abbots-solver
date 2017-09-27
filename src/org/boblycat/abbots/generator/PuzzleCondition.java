@@ -29,9 +29,6 @@ public interface PuzzleCondition {
     }
 
     static PuzzleCondition noBotAtTarget() {
-        return (b, p, s) -> {
-            //System.err.println(p + " vs " + b.getAbbots().values() + " --> " + !b.getAbbots().values().contains(p));
-            return !b.getAbbots().values().contains(p);
-        };
+        return (b, p, s) -> !b.getAbbots().values().contains(p);
     }
 }

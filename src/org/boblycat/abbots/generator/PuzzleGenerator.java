@@ -207,13 +207,14 @@ class PostProcessing {
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().get(0)));
     }
 
-    static SortedMap<Character, Map<Position, PuzzleSolution>> findUniquePuzzlesPerAbbotAndPosition(Board board,
+    static SortedMap<Character, SortedMap<Position, PuzzleSolution>> findUniquePuzzlesPerAbbotAndPosition(Board board,
             Collection<Character> abbots, Collection<PuzzleSolution> solutions,
             Collection<PuzzleCondition> conditions) {
         AtomicInteger abbotIndex = new AtomicInteger(0);
-        SortedMap<Character, Map<Position, PuzzleSolution>> result = new TreeMap<>();
+        SortedMap<Character, SortedMap<Position, PuzzleSolution>> result = new TreeMap<>();
         abbots.stream().sorted().forEach(abbot -> {
-            result.put(abbot, findUniquePuzzlesForAbbotPerPosition(board, abbotIndex.get(), solutions, conditions));
+            result.put(abbot, new TreeMap<>(
+                    findUniquePuzzlesForAbbotPerPosition(board, abbotIndex.get(), solutions, conditions)));
             abbotIndex.incrementAndGet();
         });
         return result;
@@ -249,7 +250,7 @@ public class PuzzleGenerator {
         }
     }
 
-    public SortedMap<Character, Map<Position, PuzzleSolution>> generate(int maxDepth,
+    public SortedMap<Character, SortedMap<Position, PuzzleSolution>> generate(int maxDepth,
             Collection<PuzzleCondition> conditions) {
         PuzzleSolution root = new PuzzleSolution(new PuzzleKey(originalAbbots), null, null);
         HashMap<PuzzleKey, PuzzleSolution> nodes = new HashMap<>();
@@ -299,10 +300,11 @@ public class PuzzleGenerator {
             currentNodes.addAll(nextNodes.values());
             lastDepth = depth;
         }
+        board.getAbbots().putAll(originalAbbots); // reset to original abbots so conditions will work
         if (verbose) {
             System.out.println("Before post processing: " + nodes.size() + ", depth " + lastDepth);
         }
-        SortedMap<Character, Map<Position, PuzzleSolution>> result = PostProcessing
+        SortedMap<Character, SortedMap<Position, PuzzleSolution>> result = PostProcessing
                 .findUniquePuzzlesPerAbbotAndPosition(board, board.getAbbots().keySet(), nodes.values(), conditions);
         if (verbose) {
             System.out.println("After post processing: " + result.values().stream().mapToInt(Map::size).sum());
@@ -339,7 +341,7 @@ public class PuzzleGenerator {
         //System.out.println("Using " + cpus + " threads");
         //String solution = solver.solveMultiThreaded(cpus, " ");
         //String solution = solver.solveMultiThreaded(4, " ");
-        Map<Character, Map<Position, PuzzleSolution>> results = generator.generate(args.maxDepth,
+        Map<Character, SortedMap<Position, PuzzleSolution>> results = generator.generate(args.maxDepth,
                 Collections.singleton(PuzzleCondition.unique()));
         long endTime = System.currentTimeMillis();
         AtomicInteger counter = new AtomicInteger();

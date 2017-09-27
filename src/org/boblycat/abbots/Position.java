@@ -26,11 +26,16 @@ public final class Position implements Comparable<Position> {
 
     @Override
     public int compareTo(Position other) {
-        int diff = other.x - x;
+        int diff = x - other.x;
         if (diff == 0) {
-            return other.y - y;
+            return y - other.y;
         } else {
             return diff;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "(x=" + x + " y=" + y + ")";
     }
 }

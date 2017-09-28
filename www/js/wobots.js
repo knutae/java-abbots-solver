@@ -173,7 +173,14 @@ class CraftyBoard {
                 direction = "up";
             } else if (e.key == Crafty.keys.DOWN_ARROW) {
                 direction = "down";
-            } else if (e.key == Crafty.keys.SPACE) {
+            } else if (e.key == Crafty.keys.Q) {
+                otherAbbots.unshift(activeAbbot);
+                activeAbbot = otherAbbots.pop();
+                activePos = board.abbots[activeAbbot];
+                switch_abbot_indicator(activePos[0], activePos[1]);
+                //console.log("active abbot: " + activeAbbot);
+                return;
+            } else if (e.key == Crafty.keys.E) {
                 otherAbbots.push(activeAbbot);
                 activeAbbot = otherAbbots.shift();
                 activePos = board.abbots[activeAbbot];

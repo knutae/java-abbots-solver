@@ -50,7 +50,7 @@ public class PuzzleServer {
         String wwwRoot = "www";
     }
 
-    static Board loadBoardFromResource(String name) {
+    private static Board loadBoardFromResource(String name) {
         String path = "/" + name + ".board";
         try (InputStream stream = PuzzleServer.class.getResourceAsStream(path)) {
             if (stream == null) {

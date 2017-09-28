@@ -2,7 +2,9 @@ package org.boblycat.abbots.generator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -11,14 +13,61 @@ import org.boblycat.abbots.Position;
 import org.junit.Test;
 
 public class TestGenerator {
+    private static final String ONE_BOT_BOARD = String.join("\n", //
+            "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+", //
+            "|       |               |       |", //
+            "+ + + + + + + + + + + + + +-+ + +", //
+            "|                         |     |", //
+            "+ + + + + + + + + + + + + + + + +", //
+            "|           |       |           |", //
+            "+ + + + + +-+ + + +-+ + + + + + +", //
+            "|                               |", //
+            "+ + +-+ + + + + + + + + + + + +-+", //
+            "|     |                         |", //
+            "+-+ + + + + + + + + + + + + + + +", //
+            "|             |             |   |", //
+            "+ +-+ + + + + +-+ + + +-+ + +-+ +", //
+            "| |                     |       |", //
+            "+ + + + + + + +-+-+ + + + + + + +", //
+            "|             |   |             |", //
+            "+ + + + + + + + + + + + + + + + +", //
+            "|             |   |             |", //
+            "+ + + + + + + +-+-+ + + +-+ + + +", //
+            "|       |                 |     |", //
+            "+ + + + +-+ +-+ + + + + + + + +-+", //
+            "|           |                   |", //
+            "+-+ + + + + + + + + + + + + + + +", //
+            "|                               |", //
+            "+ + + + + + + +-+ +-+ + + + + + +", //
+            "|               | |             |", //
+            "+ +-+ + + + + + + + + + + + + + +", //
+            "|   |                       |   |", //
+            "+ + + + + + + + + + + + + + +-+ +", //
+            "|       |               |b      |", //
+            "+ + + +-+ + + + + + + +-+ + + + +", //
+            "|         |                 |   |", //
+            "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+
     private static Position pos(int x, int y) {
         return Position.get(x, y);
+    }
+
+    private static Board boardFromString(String input) {
+        Board board = new Board();
+        try {
+            board.parse(input);
+            return board;
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Unexpected IOException");
+            return null;
+        }
     }
 
     @Test
     public void oneBotDepth2NoConditions() {
         List<PuzzleCondition> conditions = List.of();
-        Board board = PuzzleServer.loadBoardFromResource("example-one-bot");
+        Board board = boardFromString(ONE_BOT_BOARD);
         PuzzleGenerator generator = new PuzzleGenerator(board, true);
         assertEquals(pos(12, 14), board.getAbbots().get('b'));
         generator.generate(2, conditions).forEach((abbot, map) -> {
@@ -34,7 +83,7 @@ public class TestGenerator {
     @Test
     public void oneBotDepth2NoBotAtTarget() {
         List<PuzzleCondition> conditions = List.of(PuzzleCondition.noBotAtTarget());
-        Board board = PuzzleServer.loadBoardFromResource("example-one-bot");
+        Board board = boardFromString(ONE_BOT_BOARD);
         PuzzleGenerator generator = new PuzzleGenerator(board, true);
         assertEquals(pos(12, 14), board.getAbbots().get('b'));
         generator.generate(2, conditions).forEach((abbot, map) -> {

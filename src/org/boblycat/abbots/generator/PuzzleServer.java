@@ -129,7 +129,7 @@ public class PuzzleServer {
             }
             conditions.add(PuzzleCondition.minLength(pg.intv("min", 1)));
             puzzleSupplier.clear();
-            generatePuzzleBoards(pg.strv("board", "example-four-bots"), pg.intv("max", 10), puzzleSupplier, conditions,
+            generatePuzzleBoards(pg.strv("board", "1"), pg.intv("max", 10), puzzleSupplier, conditions,
                     pg.boolv("longest"));
             //System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")

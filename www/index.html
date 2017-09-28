@@ -5,9 +5,11 @@
       <div class="label" id="puzzleText">...</div>
       <div><button id="previous" disabled onClick="previousPuzzle()">Previous</button></div>
       <div><button id="next" disabled onClick="nextPuzzle()">Next</button></div>
-      <div>
+      <div id="buttonGroup">
+        <button id="undoAll" disabled onClick="undoAll()">&laquo;</button>
         <button id="undo" disabled onClick="undo()">&lt;</button>
         <button id="redo" disabled onClick="redo()">&gt;</button>
+        <button id="redoAll" disabled onClick="redoAll()">&raquo;</button>
       </div>
       <div><button id="cheat" disabled onClick="cheat()">Cheat!</button></div>
       <div class="label" id="counter">0</div>
@@ -30,6 +32,9 @@
       background-color: #444;
       color: white;
     }
+    #buttonGroup button {
+      margin: 5px 0 0 0;
+    }
     .label {
       font-size: 20px;
       color: #444;
@@ -50,6 +55,8 @@
       const nextButton = document.getElementById('next');
       const undoButton = document.getElementById('undo');
       const redoButton = document.getElementById('redo');
+      const undoAllButton = document.getElementById('undoAll');
+      const redoAllButton = document.getElementById('redoAll');
       const cheatButton = document.getElementById('cheat');
       const gameDiv = document.getElementById('game');
       const counterDiv = document.getElementById('counter');
@@ -61,6 +68,8 @@
         nextButton.disabled = index >= count-1;
         undoButton.disabled = !craftyBoard || !craftyBoard.canUndo();
         redoButton.disabled = !craftyBoard || !craftyBoard.canRedo();
+        undoAllButton.disabled = !craftyBoard || !craftyBoard.canUndo();
+        redoAllButton.disabled = !craftyBoard || !craftyBoard.canRedo();
         cheatButton.disabled = !craftyBoard;
         counterDiv.textContent = craftyBoard ? craftyBoard.board.moveCount : '';
         puzzleTextDiv.textContent = count ? `Puzzle ${index+1}/${count}` : 'No puzzles!';
@@ -77,6 +86,18 @@
       function redo() {
         if (craftyBoard) {
           craftyBoard.redo();
+        }
+      }
+
+      function undoAll() {
+        if (craftyBoard) {
+          craftyBoard.undoAll();
+        }
+      }
+
+      function redoAll() {
+        if (craftyBoard) {
+          craftyBoard.redoAll();
         }
       }
 

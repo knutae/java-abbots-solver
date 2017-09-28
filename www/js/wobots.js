@@ -75,15 +75,23 @@ function draw_active_indicator(x, y) {
     }).origin("center").color(activecolor);
 }
 
-function move_abbot(abbot, x, y, moveDoneFunc) {
+function move_abbot_with_duration(abbot, x, y, duration, moveDoneFunc) {
     Crafty('abbot:' + abbot).tween({
         x: x * tilesize + wallsize/2 + (tilesize - abbotsize)/2,
         y: y * tilesize + wallsize/2 + (tilesize - abbotsize)/2,
-    }, 150, "smoothStep");
+    }, duration, "smoothStep");
     Crafty('activeAbbot').tween({
         x: x * tilesize + wallsize/2 + (tilesize - activesize)/2,
         y: y * tilesize + wallsize/2 + (tilesize - activesize)/2,
-    }, 150, "smoothStep").one("TweenEnd", moveDoneFunc);
+    }, duration, "smoothStep").one("TweenEnd", moveDoneFunc);
+}
+
+function move_abbot(abbot, x, y, moveDoneFunc) {
+    move_abbot_with_duration(abbot, x, y, 150, moveDoneFunc);
+}
+
+function move_abbot_slow(abbot, x, y, moveDoneFunc) {
+    move_abbot_with_duration(abbot, x, y, 300, moveDoneFunc);
 }
 
 function switch_abbot_indicator(x, y) {
@@ -220,6 +228,26 @@ class CraftyBoard {
 
     canRedo() {
         return this.board.canRedo();
+    }
+
+    undoAll() {
+        const historyElement = this.board.undo();
+        if (historyElement) {
+            switch_abbot_indicator(historyElement.newPos[0], historyElement.newPos[1]);
+            move_abbot(historyElement.abbot, historyElement.oldPos[0], historyElement.oldPos[1], () => this.undoAll());
+        } else {
+            this._onmove();
+        }
+    }
+
+    redoAll() {
+        const historyElement = this.board.redo();
+        if (historyElement) {
+            switch_abbot_indicator(historyElement.oldPos[0], historyElement.oldPos[1]);
+            move_abbot_slow(historyElement.abbot, historyElement.newPos[0], historyElement.newPos[1], () => this.redoAll());
+        } else {
+            this._onmove();
+        }
     }
 
     undo() {

@@ -199,6 +199,12 @@ class CraftyBoard {
                 switch_abbot_indicator(activePos[0], activePos[1]);
                 //console.log("active abbot: " + activeAbbot);
                 return;
+            } else if (e.key == Crafty.keys.Z) {
+                this.undo();
+                return;
+            } else if (e.key == Crafty.keys.X) {
+                this.redo();
+                return;
             } else {
                 return;
             }

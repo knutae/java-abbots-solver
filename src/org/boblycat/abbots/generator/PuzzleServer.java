@@ -8,9 +8,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.boblycat.abbots.Board;
+import org.boblycat.abbots.Position;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -66,30 +69,33 @@ public class PuzzleServer {
     }
 
     private static void generatePuzzleBoards(String name, int maxDepth, PuzzleSupplier puzzleSupplier,
-            Collection<PuzzleCondition> conditions) {
+            Collection<PuzzleCondition> conditions, boolean longestOnly) {
         Board baseBoard = loadBoardFromResource(name);
         PuzzleGenerator generator = new PuzzleGenerator(baseBoard, false);
         AtomicInteger counter = new AtomicInteger();
-        generator.generate(maxDepth, conditions).forEach((abbot, map) -> {
+        SortedMap<Character, SortedMap<Position, PuzzleSolution>> allSolutions = generator.generate(maxDepth,
+                conditions);
+        OptionalInt longest = longestOnly
+                ? allSolutions.values().stream().flatMap(x -> x.values().stream()).mapToInt(s -> s.length).max()
+                : OptionalInt.empty();
+        allSolutions.forEach((abbot, map) -> {
             int abbotIndex = counter.getAndIncrement();
             System.out.println("Abbot '" + abbot + "': " + map.size() + " results");
-            if (!map.isEmpty()) {
-                //int longest = map.values().stream().mapToInt(x -> x.length).max().getAsInt();
-                //List<PuzzleSolution> longestResults = map.values().stream().filter(x -> x.length == longest)
-                //        .collect(Collectors.toList());
-                //System.out.println(" " + longestResults.size() + " unique puzzles with length " + longest);
-                for (PuzzleSolution s: map.values()) {
-                    /*
-                    for (List<Move> moves: s.enumerateMoves()) {
-                        System.out.println(
-                                " " + moves.stream().map(m -> m.abbot + "|" + m.dir).collect(Collectors.joining(", ")));
-                    }
-                    */
-                    //System.out.println(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
-                    //System.out.println(s.movesToString(" "));
-                    Board board = generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]);
-                    puzzleSupplier.add(board, s.movesToString(""));
+            longest.ifPresent(n -> {
+                map.values().removeIf(s -> s.length < n);
+                System.out.println(" '" + abbot + "': " + map.size() + " results after longest-only logic");
+            });
+            for (PuzzleSolution s: map.values()) {
+                /*
+                for (List<Move> moves: s.enumerateMoves()) {
+                    System.out.println(
+                            " " + moves.stream().map(m -> m.abbot + "|" + m.dir).collect(Collectors.joining(", ")));
                 }
+                */
+                //System.out.println(generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]));
+                //System.out.println(s.movesToString(" "));
+                Board board = generator.boardWithTarget(abbot, s.key.abbotPositions[abbotIndex]);
+                puzzleSupplier.add(board, s.movesToString(""));
             }
         });
     }
@@ -123,7 +129,8 @@ public class PuzzleServer {
             }
             conditions.add(PuzzleCondition.minLength(pg.intv("min", 1)));
             puzzleSupplier.clear();
-            generatePuzzleBoards(pg.strv("board", "example-four-bots"), pg.intv("max", 10), puzzleSupplier, conditions);
+            generatePuzzleBoards(pg.strv("board", "example-four-bots"), pg.intv("max", 10), puzzleSupplier, conditions,
+                    pg.boolv("longest"));
             //System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")
                     .end(Integer.toString(puzzleSupplier.size()));

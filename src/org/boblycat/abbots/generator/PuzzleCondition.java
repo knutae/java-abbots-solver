@@ -11,7 +11,7 @@ public interface PuzzleCondition {
         return (b, p, s) -> s.isUnique();
     }
 
-    static PuzzleCondition lengthAtLeast(int length) {
+    static PuzzleCondition minLength(int length) {
         return (b, p, s) -> s.length >= length;
     }
 

@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.boblycat.abbots.Board;
 
@@ -75,11 +74,11 @@ public class PuzzleServer {
             int abbotIndex = counter.getAndIncrement();
             System.out.println("Abbot '" + abbot + "': " + map.size() + " results");
             if (!map.isEmpty()) {
-                int longest = map.values().stream().mapToInt(x -> x.length).max().getAsInt();
-                List<PuzzleSolution> longestResults = map.values().stream().filter(x -> x.length == longest)
-                        .collect(Collectors.toList());
-                System.out.println(" " + longestResults.size() + " unique puzzles with length " + longest);
-                for (PuzzleSolution s: longestResults) {
+                //int longest = map.values().stream().mapToInt(x -> x.length).max().getAsInt();
+                //List<PuzzleSolution> longestResults = map.values().stream().filter(x -> x.length == longest)
+                //        .collect(Collectors.toList());
+                //System.out.println(" " + longestResults.size() + " unique puzzles with length " + longest);
+                for (PuzzleSolution s: map.values()) {
                     /*
                     for (List<Move> moves: s.enumerateMoves()) {
                         System.out.println(
@@ -122,10 +121,10 @@ public class PuzzleServer {
             if (bots > 1) {
                 conditions.add(PuzzleCondition.differentBotsMovedAtLeast(bots));
             }
+            conditions.add(PuzzleCondition.minLength(pg.intv("min", 1)));
             puzzleSupplier.clear();
-            generatePuzzleBoards(pg.strv("board", "example-four-bots"), pg.intv("depth", 10), puzzleSupplier,
-                    conditions);
-            System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
+            generatePuzzleBoards(pg.strv("board", "example-four-bots"), pg.intv("max", 10), puzzleSupplier, conditions);
+            //System.out.println("SIZE " + Integer.toString(puzzleSupplier.size()));
             ctx.response().setStatusCode(200).putHeader("context-type", "text/plain")
                     .end(Integer.toString(puzzleSupplier.size()));
         });

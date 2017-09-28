@@ -90,6 +90,10 @@ function move_abbot(abbot, x, y, moveDoneFunc) {
     move_abbot_with_duration(abbot, x, y, 150, moveDoneFunc);
 }
 
+function move_abbot_fast(abbot, x, y, moveDoneFunc) {
+    move_abbot_with_duration(abbot, x, y, 100, moveDoneFunc);
+}
+
 function move_abbot_slow(abbot, x, y, moveDoneFunc) {
     move_abbot_with_duration(abbot, x, y, 300, moveDoneFunc);
 }
@@ -234,7 +238,10 @@ class CraftyBoard {
         const historyElement = this.board.undo();
         if (historyElement) {
             switch_abbot_indicator(historyElement.newPos[0], historyElement.newPos[1]);
-            move_abbot(historyElement.abbot, historyElement.oldPos[0], historyElement.oldPos[1], () => this.undoAll());
+            move_abbot_fast(historyElement.abbot, historyElement.oldPos[0], historyElement.oldPos[1], () => {
+                this._onmove();
+                this.undoAll();
+            })
         } else {
             this._onmove();
         }
@@ -244,7 +251,10 @@ class CraftyBoard {
         const historyElement = this.board.redo();
         if (historyElement) {
             switch_abbot_indicator(historyElement.oldPos[0], historyElement.oldPos[1]);
-            move_abbot_slow(historyElement.abbot, historyElement.newPos[0], historyElement.newPos[1], () => this.redoAll());
+            move_abbot_slow(historyElement.abbot, historyElement.newPos[0], historyElement.newPos[1], () => {
+                this._onmove();
+                this.redoAll();
+            });
         } else {
             this._onmove();
         }
